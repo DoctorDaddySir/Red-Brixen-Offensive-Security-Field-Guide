@@ -62,3 +62,7 @@
 - checklists/ad/kerberos_checklist.md
 - checklists/ad/adcs_checklist.md
 - checklists/ad/relay_coercion_checklist.md
+
+## Privilege Escalation
+- Linux index: privilege-escalation/linux/00_linux_privesc_index.md
+- Windows index: privilege-escalation/windows/00_windows_privesc_index.md
