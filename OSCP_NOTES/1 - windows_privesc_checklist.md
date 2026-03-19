@@ -19,26 +19,26 @@ ipconfig /all
 
 ## 1. Quick Wins (ALWAYS CHECK FIRST)
 
-### Check for stored credentials
+### Stored credentials
 
 ```powershell
 cmdkey /list
 ```
 
-### Check for AlwaysInstallElevated
+### AlwaysInstallElevated
 
 ```powershell
 reg query HKCU\Software\Policies\Microsoft\Windows\Installer
 reg query HKLM\Software\Policies\Microsoft\Windows\Installer
 ```
 
-### Check for writable shares
+### Shares
 
 ```powershell
 net share
 ```
 
-### Check current user privileges
+### Privileges
 
 ```powershell
 whoami /priv
@@ -54,7 +54,7 @@ Look for:
 
 ## 2. Credential Hunting
 
-### Search for passwords in files
+### File search
 
 ```powershell
 findstr /si password *.txt *.xml *.ini *.config
@@ -69,7 +69,7 @@ findstr /si password *.txt *.xml *.ini *.config
 * C:\xampp\
 * C:\Program Files\
 
-### Registry creds
+### Registry search
 
 ```powershell
 reg query HKLM /f password /t REG_SZ /s
@@ -77,65 +77,144 @@ reg query HKLM /f password /t REG_SZ /s
 
 ---
 
-## 3. Services (HIGH VALUE)
+## 3. Services (HIGH VALUE — MULTIPLE METHODS)
 
-### List services
+### Method 1 — Basic
 
 ```powershell
 sc query
 ```
 
-### Check service configs
+### Method 2 — Extended
+
+```powershell
+sc queryex
+```
+
+### Method 3 — Config
 
 ```powershell
 sc qc <service>
 ```
 
-Look for:
+### Method 4 — PowerShell
+
+```powershell
+Get-Service
+```
+
+### Method 5 — WMI (detailed)
+
+```powershell
+Get-WmiObject Win32_Service | select Name,DisplayName,PathName,StartMode,State
+```
+
+### Method 6 — Running only
+
+```powershell
+Get-Service | Where-Object {$_.Status -eq "Running"}
+```
+
+### Method 7 — SYSTEM services
+
+```powershell
+Get-WmiObject Win32_Service | Where-Object {$_.StartName -eq "LocalSystem"}
+```
+
+### Permission check
+
+```powershell
+sc qc <service>
+icacls "<service_binary_path>"
+```
+
+### What to look for
 
 * Unquoted service paths
 * Writable service binaries
+* Services running as SYSTEM
 * Weak permissions
 
 ---
 
-## 4. Scheduled Tasks
+## 4. Scheduled Tasks (MULTIPLE METHODS)
+
+### Method 1 — Basic
+
+```powershell
+schtasks /query
+```
+
+### Method 2 — Verbose
 
 ```powershell
 schtasks /query /fo LIST /v
 ```
 
-Look for:
+### Method 3 — PowerShell
+
+```powershell
+Get-ScheduledTask
+```
+
+### Method 4 — Detailed
+
+```powershell
+Get-ScheduledTask | Get-ScheduledTaskInfo
+```
+
+### Method 5 — SYSTEM tasks
+
+```powershell
+Get-ScheduledTask | Where-Object {$_.Principal.UserId -eq "SYSTEM"}
+```
+
+### Method 6 — Actions
+
+```powershell
+Get-ScheduledTask | Select TaskName,Actions
+```
+
+### What to look for
 
 * Tasks running as SYSTEM
 * Writable scripts/binaries
+* Misconfigured permissions
 
 ---
 
 ## 5. File System Permissions
 
-### Find writable directories
+### Check common directories
 
 ```powershell
 icacls "C:\Program Files" /t
+icacls "C:\Program Files (x86)" /t
 ```
 
 Look for:
 
-* Write access in privileged paths
+* Writable directories
+* Writable executables
 
 ---
 
-## 6. Token Impersonation (VERY COMMON)
+## 6. Token Impersonation (VERY HIGH VALUE)
 
-If you have:
+Check:
+
+```powershell
+whoami /priv
+```
+
+If present:
 
 * SeImpersonatePrivilege
 
 → Try:
 
 * PrintSpoofer
-* JuicyPotato / RoguePotato
+* RoguePotato / JuicyPotato
 
 ---
 
@@ -147,7 +226,7 @@ wmic product get name,version
 
 Look for:
 
-* Known vulnerable software
+* Vulnerable versions
 * Misconfigurations
 
 ---
@@ -160,7 +239,7 @@ tasklist /v
 
 Look for:
 
-* Processes running as SYSTEM
+* SYSTEM processes
 * Interesting services
 
 ---
@@ -174,7 +253,7 @@ netstat -ano
 Look for:
 
 * Internal-only services
-* Ports bound to localhost
+* Localhost-bound ports
 
 ---
 
@@ -184,13 +263,11 @@ Run:
 
 * winPEAS
 
-Transfer and execute:
-
 ```powershell
 .\winPEAS.exe
 ```
 
-Review output carefully.
+Review output manually.
 
 ---
 
@@ -203,7 +280,7 @@ Review output carefully.
 
 ### SeDebugPrivilege
 
-* Inject into processes
+* Process injection
 
 ---
 
@@ -216,29 +293,36 @@ Look for:
 
 ---
 
-## 13. Always Think:
+## 13. Alternate Enumeration (WMI / CIM)
+
+```powershell
+Get-CimInstance Win32_Service
+Get-CimInstance Win32_ScheduledJob
+```
+
+---
+
+## 14. Always Think
 
 * Can I write to something executed by SYSTEM?
-* Can I replace something?
+* Can I replace a binary or script?
 * Can I reuse credentials?
-* Can I impersonate?
+* Can I impersonate a token?
 
 ---
 
-## 14. If Stuck
+## 15. If Stuck (RESET)
 
-RESET:
-
-* Re-run enumeration
-* Check ALL writable files
-* Check ALL services again
-* Check ALL tasks again
-* Look for creds again
-* Try different tools
+* Re-enumerate everything
+* Re-check services
+* Re-check scheduled tasks
+* Re-check writable files
+* Re-check credentials
+* Try another method for each check
 
 ---
 
-## 15. Proof
+## 16. Proof
 
 Once SYSTEM:
 
