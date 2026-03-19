@@ -6,16 +6,16 @@ Access internal networks through compromised hosts
 
 ---
 
-## Primary Tool
+## Primary Method
 
 - Ligolo
 
 ---
 
-## Secondary Tools
+## Secondary Methods
 
 - Chisel
-- SSH tunnels
+- SSH tunneling
 - Proxychains
 
 ---
@@ -23,7 +23,7 @@ Access internal networks through compromised hosts
 ## Workflow
 
 1. establish tunnel
-2. verify access
+2. verify connectivity
 3. scan internal network
 4. continue attack loop
 

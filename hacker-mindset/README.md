@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Train decision-making under pressure
+Improve decision-making under pressure
 
 ---
 
 ## Focus Areas
 
 - breaking assumptions
-- iterative thinking
+- hypothesis testing
 - pattern recognition
 - avoiding tunnel vision
 

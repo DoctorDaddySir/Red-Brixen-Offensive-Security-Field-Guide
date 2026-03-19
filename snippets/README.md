@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Quick command reference for fast execution
+Fast command execution reference
 
 ---
 
@@ -18,7 +18,7 @@ Quick command reference for fast execution
 ## Usage
 
 - copy → modify → execute
-- do not memorize, recognize patterns
+- optimize for speed, not memorization
 
 ---
 

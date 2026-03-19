@@ -2,20 +2,23 @@
 
 ## Purpose
 
-Attack domain environments using:
-- relationships
-- permissions
-- credentials
+Attack domain environments using relationships and permissions
 
 ---
 
-## Flow
+## Core Model
 
-1. Recon
-2. Enum
-3. Credentials
-4. Movement
-5. Escalation
+Users → Groups → Permissions → Systems
+
+---
+
+## Workflow
+
+1. Recon (domain + DC)
+2. Domain enumeration
+3. Credential access
+4. Lateral movement
+5. Privilege escalation
 
 ---
 
@@ -29,7 +32,15 @@ Attack domain environments using:
 
 ---
 
-## Core Truth
+## Priority
+
+1. Credentials
+2. BloodHound paths
+3. Misconfigurations
+
+---
+
+## Golden Rule
 
 AD is not about hosts.
 

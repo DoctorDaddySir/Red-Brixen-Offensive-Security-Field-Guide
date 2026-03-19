@@ -2,9 +2,7 @@
 
 ## Purpose
 
-Escalate from:
-- low user → root (Linux)
-- user → SYSTEM (Windows)
+Escalate privileges on compromised systems
 
 ---
 
@@ -19,15 +17,26 @@ windows/
 
 ## Strategy
 
-1. quick wins first
+1. quick wins
 2. misconfigurations
 3. credentials
 4. exploits (last)
 
 ---
 
+## Workflow
+
+After gaining a shell:
+
+- enumerate system
+- check privileges
+- identify misconfigurations
+- escalate
+
+---
+
 ## Golden Rules
 
-- sudo -l first (Linux)
-- whoami /priv (Windows)
+- Linux: sudo -l first
+- Windows: whoami /priv first
 - credentials > exploits
