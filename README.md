@@ -1,23 +1,88 @@
-# Security Knowledge Base (OSCP-focused)
+# Pentesting Tools & OSCP+ Field Guide
 
-- Start here: [00_START_HERE.md](00_START_HERE.md)
+## Purpose
 
-## Workflows
-- [Initial Enumeration](workflows/01_initial_enum.md)
-- [Web](workflows/02_web.md)
-- [SMB](workflows/03_smb.md)
-- [AD](workflows/04_ad.md)
-- [Linux PrivEsc](workflows/05_privesc_linux.md)
-- [Windows PrivEsc](workflows/06_privesc_windows.md)
-- [Pivoting / Tunneling](workflows/07_pivoting_tunneling.md)
-- [Passwords / Creds](workflows/08_passwords_creds.md)
-- [Exploitation Playbook](workflows/09_exploitation_playbook.md)
+This repository is a **high-speed operational reference** for penetration testing.
 
-## Services
-See `/services` for quick service-specific enum + attack paths.
+It is designed for:
+- OSCP+ exam use
+- lab environments
+- real-world engagements
 
-## Snippets
-Copy/paste blocks in `/snippets`.
+---
 
-## Tools
-Reusable scripts and artifacts in `/tools` (kept separate from the KB pages).
+## Core Philosophy
+
+- Speed > completeness
+- Enumeration > guessing
+- Credentials > exploits
+- Simple > clever
+
+---
+
+## Structure
+
+```
+.
+├── enumeration/
+├── privesc/
+│   ├── linux/
+│   └── windows/
+├── ad/
+├── pivoting/
+├── snippets/
+├── workflows/
+├── mindset/
+├── worksheets/
+```
+
+---
+
+## How To Use (Exam Mode)
+
+1. Start with:
+   → workflows/01_initial_enum.md
+
+2. Follow workflow progression:
+   → web / smb / ad
+
+3. Use:
+   → snippets/ for commands
+   → privesc/ for escalation
+   → pivoting/ for internal access
+
+4. If stuck:
+   → mindset/
+
+---
+
+## Golden Loop
+
+```
+Scan → Enum → Exploit → Shell → Privesc → Pivot → Repeat
+```
+
+---
+
+## Priority Order
+
+1. Credentials
+2. Misconfigurations
+3. Known attack paths
+4. Exploits
+
+---
+
+## Warning
+
+Do NOT:
+- skip enumeration
+- tunnel on one idea
+- overcomplicate solutions
+
+---
+
+## Goal
+
+Turn this repo into:
+→ instinct under pressure
