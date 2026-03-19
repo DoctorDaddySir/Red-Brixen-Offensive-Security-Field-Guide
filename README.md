@@ -1,31 +1,87 @@
-# Workflows
+# Pentesting Tools & OSCP+ Field Guide
 
 ## Purpose
 
-Provide structured attack execution paths
+This repository is a **high-speed operational system** for penetration testing.
+
+It is optimized for:
+- OSCP+ exam execution
+- lab environments
+- real-world engagements
 
 ---
 
-## Files
+## Core Philosophy
 
-- 01_initial_enum.md
-- 02_web.md
-- 03_smb.md
-- 04_ad.md
-- 05_privesc_linux.md
-- 06_privesc_windows.md
-- 07_pivoting_tunneling.md
-- 08_passwords_creds.md
-- 09_exploitation_playbook.md
+- Enumeration is continuous
+- Credentials are king
+- Misconfigurations beat exploits
+- Simplicity beats cleverness
 
 ---
 
-## Usage
+## Structure
 
-Follow sequentially unless a clear pivot is required
+```
+.
+├── enumeration/
+├── privilege-escalation/
+│   ├── linux/
+│   └── windows/
+├── active-directory/
+├── pivoting/
+├── snippets/
+├── workflows/
+├── hacker-mindset/
+├── exploited_vulns/
+```
 
 ---
 
-## Golden Rule
+## How To Use (Exam Mode)
 
-Follow the process, not your instincts
+1. Start here:
+   → workflows/01_initial_enum.md
+
+2. Follow the workflow:
+   → web → smb → active-directory
+
+3. Use:
+   → snippets/ for commands  
+   → privilege-escalation/ for escalation  
+   → pivoting/ for internal access  
+
+4. If stuck:
+   → hacker-mindset/
+
+---
+
+## Core Loop
+
+```
+Scan → Enum → Exploit → Shell → Privesc → Pivot → Repeat
+```
+
+---
+
+## Priority Order
+
+1. Credentials
+2. Misconfigurations
+3. Known attack paths
+4. Exploits (last)
+
+---
+
+## Warning
+
+Do NOT:
+- skip enumeration
+- tunnel on one idea
+- overcomplicate solutions
+
+---
+
+## Goal
+
+Turn this repo into instinct under pressure
