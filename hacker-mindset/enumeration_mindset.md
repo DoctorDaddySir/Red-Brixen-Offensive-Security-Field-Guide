@@ -1,22 +1,62 @@
 # Enumeration Mindset
 
-Enumeration is not running tools.
+## Purpose
 
-Enumeration is **building a mental model of the system.**
+Maximize information gathering efficiency.
 
-Questions to constantly ask:
+---
 
-- What services exist?
-- What accounts exist?
-- What trust relationships exist?
-- What technologies are in use?
-- What version differences exist?
+## Core Principle
 
-Goal:
+Enumeration is not a step.
 
-Turn the target into a **map of attack paths**.
+It is:
+→ continuous
 
-Practice:
+---
 
-Pick a machine and list **every possible attack surface** before exploiting anything.
+## What To Look For
 
+- services
+- users
+- credentials
+- file access
+- execution paths
+
+---
+
+## Always Ask
+
+- What is exposed?
+- What is accessible?
+- What is misconfigured?
+
+---
+
+## Layered Enumeration
+
+1. surface (ports, services)
+2. service-level (web, smb, ldap)
+3. system-level (files, users)
+4. privilege-level (permissions)
+
+---
+
+## Behavior
+
+- enumerate immediately after shell
+- enumerate after privilege escalation
+- enumerate after pivot
+
+---
+
+## Common Failure
+
+Stopping enumeration too early.
+
+---
+
+## Golden Rule
+
+If you are stuck:
+→ you missed something

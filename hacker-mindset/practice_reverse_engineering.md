@@ -1,17 +1,37 @@
-# Reverse Engineering Thinking Practice
+# Practice – Reverse Engineering
 
-Download random binaries from:
+## Purpose
 
-- HackTheBox
-- CTF challenges
+Understand how binaries behave.
 
-Questions to ask:
+---
 
-- What input does it accept?
-- What libraries does it use?
-- What assumptions does it make?
+## Exercises
 
-Goal:
+- run strings on binaries
+- identify functions
+- analyze inputs/outputs
+- modify behavior
 
-Train the brain to analyze **unknown software quickly**.
+---
 
+## Tools
+
+- strings
+- ltrace
+- strace
+- ghidra (advanced)
+
+---
+
+## Focus
+
+- authentication logic
+- hardcoded credentials
+- hidden functionality
+
+---
+
+## Golden Rule
+
+Programs reveal their secrets if observed closely

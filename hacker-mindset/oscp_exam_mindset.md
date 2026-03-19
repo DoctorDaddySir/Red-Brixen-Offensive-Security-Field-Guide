@@ -1,20 +1,60 @@
 # OSCP Exam Mindset
 
-Key principles:
+## Purpose
 
-1. Enumeration solves most machines
-2. Stay methodical
-3. Avoid rabbit holes
-4. Reset and rethink when stuck
+Optimize behavior during the exam.
 
-Recommended loop:
+---
 
-1. Scan
-2. Enumerate
-3. Attempt exploitation
-4. Re-enumerate with new context
+## Core Principles
 
-Most OSCP boxes follow **predictable attack chains**.
+- stay calm
+- stay systematic
+- avoid rabbit holes
 
-The challenge is recognizing them quickly.
+---
 
+## Time Strategy
+
+0–30 min:
+- full enumeration
+- quick wins
+
+30–90 min:
+- targeted attacks
+
+90+:
+- pivot or switch target
+
+---
+
+## When Stuck
+
+- switch technique
+- switch target
+- revisit enumeration
+
+---
+
+## Common Failures
+
+- tunnel vision
+- overcomplication
+- skipping basics
+
+---
+
+## Priority Order
+
+1. credentials
+2. misconfigurations
+3. simple exploits
+4. complex exploits (last)
+
+---
+
+## Golden Rules
+
+- enumeration solves most problems
+- credentials win exams
+- simple beats clever

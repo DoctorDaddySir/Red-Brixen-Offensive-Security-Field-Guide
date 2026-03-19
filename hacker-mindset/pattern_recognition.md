@@ -1,17 +1,63 @@
 # Pattern Recognition
 
-Most machines fall into patterns.
+## Purpose
 
-Examples:
+Recognize recurring vulnerabilities and exploitation paths.
 
-- CMS exploit → webshell → credential reuse
-- SMB share → password leak → WinRM
-- SUID binary → GTFOBins
-- Cron job → script hijack
+---
 
-Developing intuition means seeing these patterns quickly.
+## Common Patterns
 
-Practice:
+### Web
 
-After solving a box, identify the **pattern category** it belongs to.
+- login → weak creds
+- upload → RCE
+- LFI → file access → creds
 
+---
+
+### SMB
+
+- share → files → creds → reuse
+
+---
+
+### AD
+
+- user list → roasting → creds → lateral movement
+
+---
+
+### Linux
+
+- SUID → privilege escalation
+- sudo → misconfig
+
+---
+
+### Windows
+
+- SeImpersonate → SYSTEM
+- services → misconfig
+- scheduled tasks → writable
+
+---
+
+## Skill Development
+
+- note repeated patterns
+- compare machines
+- reuse successful approaches
+
+---
+
+## When To Use
+
+- after initial enumeration
+- when seeing familiar services
+
+---
+
+## Golden Rule
+
+Most boxes are variations of known patterns

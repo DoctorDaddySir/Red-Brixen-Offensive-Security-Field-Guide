@@ -1,21 +1,55 @@
-# Service Analysis Practice
+# Practice – Service Analysis
 
-Choose a random network service.
+## Purpose
 
-Examples:
+Train service-level attack thinking.
 
-FTP
-SMTP
-SMB
-LDAP
+---
 
-Ask:
+## Process
 
-- What authentication exists?
-- What commands exist?
-- What trust relationships exist?
+1. identify service
+2. map inputs
+3. map outputs
+4. identify trust boundaries
 
-Goal:
+---
 
-Understand how services behave.
+## Questions
 
+- what does it accept?
+- what does it return?
+- what does it trust?
+
+---
+
+## Examples
+
+### Web
+
+- parameters
+- headers
+- uploads
+
+### SMB
+
+- shares
+- permissions
+
+### SSH
+
+- auth methods
+- key usage
+
+---
+
+## Goal
+
+Understand:
+→ how the service can be abused
+
+---
+
+## Golden Rule
+
+Every service exposes an attack surface
