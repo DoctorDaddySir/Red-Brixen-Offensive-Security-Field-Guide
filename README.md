@@ -1,6 +1,20 @@
 # Red Brixen Offensive Security Field Guide
 A structured penetration testing system designed for OSCP+ preparation and real-world engagements.
 
+## Intended Audience
+
+- OSCP candidates
+- aspiring penetration testers
+- security engineers building practical workflows
+
+## Highlights
+
+- End-to-end attack workflows
+- Active Directory attack framework
+- Privilege escalation playbooks (Linux + Windows)
+- Pivoting strategies (Ligolo, tunnels)
+- Reporting templates
+
 ## Purpose
 
 This repository is a **high-speed operational system** for penetration testing.
