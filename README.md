@@ -1,4 +1,5 @@
-# Pentesting Tools & OSCP+ Field Guide
+# Red Brixen Offensive Security Field Guide
+A structured penetration testing system designed for OSCP+ preparation and real-world engagements.
 
 ## Purpose
 
