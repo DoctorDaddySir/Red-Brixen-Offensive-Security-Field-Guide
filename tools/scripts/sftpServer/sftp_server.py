@@ -1,8 +1,86 @@
-import os
-import socket
-import paramiko
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
+import os
+import socket
+import time
+
+import paramiko
+
+
+def valid_port(value):
+    try:
+        port = int(value)
+    except ValueError as exc:
+        raise ArgumentTypeError("Port must be an integer") from exc
+
+    if not 1 <= port <= 65535:
+        raise ArgumentTypeError("Port must be between 1 and 65535")
+
+    return port
+
+
+def parse_args():
+    parser = ArgumentParser(
+        description="Portable SFTP server serving the current directory"
+    )
+
+    parser.add_argument(
+        "--username",
+        required=True,
+        help="Username required for SFTP login"
+    )
+
+    parser.add_argument(
+        "--password",
+        required=True,
+        help="Password required for SFTP login"
+    )
+
+    parser.add_argument(
+        "--port",
+        type=valid_port,
+        default=22,
+        help="Port to listen on (default: 22)"
+    )
+
+    args = parser.parse_args()
+
+    return {
+        "username": args.username,
+        "password": args.password,
+        "port": args.port,
+        "base_dir": Path.cwd(),
+    }
+
+
+def load_or_create_host_key(key_path: Path):
+    if key_path.exists():
+        print(f"[+] Loading existing host key from: {key_path}")
+        return paramiko.RSAKey.from_private_key_file(str(key_path))
+
+    print(f"[+] Host key not found. Generating new key at: {key_path}")
+    host_key = paramiko.RSAKey.generate(bits=2048)
+    host_key.write_private_key_file(str(key_path))
+    key_path.chmod(0o600)
+    return host_key
+
+
+def ensure_port_permissions(port: int):
+    if port < 1024 and os.name != "nt":
+        if os.geteuid() != 0:
+            raise PermissionError(
+                f"Port {port} requires elevated privileges. "
+                f"Run with sudo/root or use a higher port such as 2222."
+            )
+
+
+def create_listening_socket(port: int):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind(("0.0.0.0", port))
+    server_socket.listen(5)
+    return server_socket
+
 
 class SimpleSSHServer(paramiko.ServerInterface):
     def __init__(self, allowed_username: str, allowed_password: str):
@@ -27,77 +105,18 @@ class SimpleSSHServer(paramiko.ServerInterface):
 
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
-def valid_port(value):
-    try:
-        port = int(value)
-    except ValueError as exc:
-        raise ArgumentTypeError("Port must be an integer") from exc
-
-    if not 1 <= port <= 65535:
-        raise ArgumentTypeError("Port must be between 1 and 65535")
-
-    return port
-
-def load_or_create_host_key(key_path: Path):
-    if key_path.exists():
-        print(f"[+] Loading existing host key from: {key_path}")
-        return paramiko.RSAKey.from_private_key_file(str(key_path))
-
-    print(f"[+] Host key not found. Generating new key at: {key_path}")
-    host_key = paramiko.RSAKey.generate(bits=2048)
-    host_key.write_private_key_file(str(key_path))
-    key_path.chmod(0o600)
-    return host_key
-
-def ensure_port_permissions(port: int):
-    if port < 1024 and os.name != "nt":
-        if os.geteuid() != 0:
-            raise PermissionError(
-                f"Port {port} requires elevated privileges. "
-                f"Run with sudo/root or use a higher port such as 2222."
-            )
+    def check_channel_subsystem_request(self, channel, name: str):
+        if name == "sftp":
+            return True
+        return False
 
 
-def create_listening_socket(port: int):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(("0.0.0.0", port))
-    server_socket.listen(5)
-    return server_socket
+class SimpleSFTPServer(paramiko.SFTPServerInterface):
+    def __init__(self, server, *args, base_dir: Path, **kwargs):
+        super().__init__(server, *args, **kwargs)
+        self.base_dir = base_dir.resolve()
+        print(f"[+] SFTP subsystem started with base directory: {self.base_dir}")
 
-
-def parse_args():
-    parser = ArgumentParser(
-        description="Portable SFTP server serving the current directory"
-    )
-    parser.add_argument(
-        "--username", 
-        required=True,
-        help="Username required for SFTP login")
-
-    parser.add_argument(
-        "--password",
-        required=True,
-        help="Password required for SFTP login"
-    )
-
-    parser.add_argument(
-        "--port",
-        type=valid_port,
-        default=22,
-        help="Port to listen on (default: 22)"
-    )
-
-    args = parser.parse_args()
-
-    config = {
-        "username": args.username,
-        "password": args.password,
-        "port": args.port,
-        "base_dir": Path.cwd(),
-    }
-
-    return config
 
 def handle_client_connection(
     client_socket,
@@ -107,14 +126,25 @@ def handle_client_connection(
     transport = paramiko.Transport(client_socket)
     transport.add_server_key(host_key)
 
+    transport.set_subsystem_handler(
+        "sftp",
+        paramiko.SFTPServer,
+        SimpleSFTPServer,
+        base_dir=config["base_dir"],
+    )
+
     server = SimpleSSHServer(
         allowed_username=config["username"],
         allowed_password=config["password"],
     )
 
     try:
-        transport.start_server(server=server)
-        print("[+] SSH negotiation started")
+        try:
+            transport.start_server(server=server)
+            print("[+] SSH negotiation started")
+        except paramiko.SSHException as exc:
+            print(f"[-] SSH negotiation failed: {exc}")
+            return
 
         channel = transport.accept(timeout=30)
         if channel is None:
@@ -122,7 +152,9 @@ def handle_client_connection(
             return
 
         print("[+] SSH client authenticated and opened a session channel")
-        channel.close()
+
+        while transport.is_active():
+            time.sleep(1)
 
     finally:
         transport.close()
