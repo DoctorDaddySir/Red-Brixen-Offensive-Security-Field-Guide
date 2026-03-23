@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${TMUX:-}" ]]; then
+  echo "[!] Not currently inside a tmux session."
+  exit 1
+fi
+
+exec tmux detach-client

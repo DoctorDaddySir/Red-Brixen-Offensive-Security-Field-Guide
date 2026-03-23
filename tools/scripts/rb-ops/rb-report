@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""
+Red Brixen Security - rb-report
+Generate a markdown engagement report from the RB-OPS SQLite database.
+Requires an active tmux session; stores data in:
+  $PENTEST_BASE/<session>/.redbrixen/opskit.db
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
+
+
+def fail(msg: str) -> None:
+    print(f"[!] {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def engagement_context() -> tuple[str, Path, Path]:
+    if not os.environ.get("TMUX"):
+        fail("rb-report must be run from inside an active tmux engagement session.")
+    try:
+        session = subprocess.check_output(["tmux", "display-message", "-p", "#S"], stderr=subprocess.DEVNULL, text=True).strip()
+    except Exception:
+        fail("Failed to determine tmux session name.")
+    if not session:
+        fail("Failed to determine tmux session name.")
+    base = Path(os.environ.get("PENTEST_BASE", DEFAULT_BASE)).expanduser()
+    engagement_dir = base / session
+    if not engagement_dir.is_dir():
+        fail(f"Engagement directory not found for tmux session '{session}': {engagement_dir}")
+    meta_dir = engagement_dir / ".redbrixen"
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    db_path = meta_dir / "opskit.db"
+    return session, engagement_dir, db_path
+
+
+def connect() -> sqlite3.Connection:
+    _, _, db_path = engagement_context()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def table_exists(conn: sqlite3.Connection, name: str) -> bool:
+    row = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (name,)).fetchone()
+    return row is not None
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate Red Brixen markdown engagement report.")
+    parser.add_argument("--output", default="")
+    args = parser.parse_args()
+
+    session, engagement_dir, _ = engagement_context()
+    conn = connect()
+
+    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "engagement_report.md"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lines = [f"# Red Brixen Security - Engagement Report: {session}", ""]
+
+    notes_path = engagement_dir / "notes.md"
+    scope_path = engagement_dir / "scope.md"
+    if scope_path.exists():
+        lines.extend(["## Scope Notes", "", scope_path.read_text(encoding="utf-8").strip(), ""])
+    if notes_path.exists():
+        lines.extend(["## Engagement Notes", "", notes_path.read_text(encoding="utf-8").strip(), ""])
+
+    lines.extend(["## Executive Summary", "", "Draft this section after validating findings and impact.", ""])
+
+    if table_exists(conn, "findings"):
+        findings = conn.execute("SELECT * FROM findings ORDER BY cvss_score DESC, id ASC").fetchall()
+    else:
+        findings = []
+    lines.extend(["## Findings Summary", ""])
+    if findings:
+        for f in findings:
+            lines.append(f"- [{f['severity']}] {f['title']} (CVSS {f['cvss_score']}) - {f['host'] or 'General'}")
+    else:
+        lines.append("No findings recorded.")
+    lines.append("")
+
+    lines.extend(["## Findings Detail", ""])
+    if findings:
+        for f in findings:
+            lines.append(f"### [{f['severity']}] {f['title']}")
+            lines.append(f"- CVSS Score: {f['cvss_score']}")
+            lines.append(f"- CVSS Vector: `{f['cvss_vector']}`")
+            lines.append(f"- Affected Host / Scope Item: {f['host'] or '-'}")
+            lines.append("- Description:")
+            lines.append(f["description"])
+            lines.append("- Recommendation:")
+            lines.append("Add remediation guidance here.")
+            lines.append("")
+    else:
+        lines.append("No findings recorded.")
+        lines.append("")
+
+    if table_exists(conn, "exploit_chain_steps"):
+        steps = conn.execute("SELECT * FROM exploit_chain_steps ORDER BY step_order, id").fetchall()
+    else:
+        steps = []
+    lines.extend(["## Attack Chain", ""])
+    if steps:
+        for s in steps:
+            lines.append(f"### Step {s['step_order']}: {s['title']}")
+            lines.append(f"- Tactic: {s['tactic'] or '-'}")
+            lines.append(f"- Host: {s['host'] or '-'}")
+            if s['command']:
+                lines.append("- Command:")
+                lines.append("```text")
+                lines.append(s['command'])
+                lines.append("```")
+            lines.append(f"- Outcome: {s['outcome'] or '-'}")
+            lines.append(f"- Evidence: {s['evidence_path'] or '-'}")
+            if s['notes']:
+                lines.append(f"- Notes: {s['notes']}")
+            lines.append("")
+    else:
+        lines.append("No exploit chain steps recorded.")
+        lines.append("")
+
+    if table_exists(conn, "credentials"):
+        creds = conn.execute("SELECT * FROM credentials ORDER BY id").fetchall()
+    else:
+        creds = []
+    if table_exists(conn, "credential_validations"):
+        vals = conn.execute("SELECT * FROM credential_validations ORDER BY credential_id, id").fetchall()
+    else:
+        vals = []
+    vals_by_cred = {}
+    for v in vals:
+        vals_by_cred.setdefault(v["credential_id"], []).append(v)
+    lines.extend(["## Credentials", ""])
+    if creds:
+        for c in creds:
+            lines.append(f"### [{c['id']}] {c['username']}")
+            lines.append(f"- Kind: {c['kind']}")
+            lines.append(f"- Secret: `{c['secret']}`")
+            lines.append(f"- Host: {c['host'] or '-'}")
+            lines.append(f"- Service: {c['service'] or '-'}")
+            lines.append(f"- Source: {c['source'] or '-'}")
+            lines.append(f"- Validated: {'Yes' if c['validated'] else 'No'}")
+            if c['notes']:
+                lines.append(f"- Notes: {c['notes']}")
+            if vals_by_cred.get(c['id']):
+                lines.append("- Validation Events:")
+                for v in vals_by_cred[c['id']]:
+                    lines.append(f"  - host={v['host'] or '-'} | service={v['service'] or '-'} | {v['notes'] or '-'}")
+            lines.append("")
+    else:
+        lines.append("No credentials recorded.")
+        lines.append("")
+
+    lines.extend(["## Evidence and Artifacts", "", "Reference screenshots, logs, loot, and proof artifacts here.", ""])
+    lines.extend(["## Cleanup / Client Notes", "", "Document cleanup actions, validation notes, and client-facing caveats here.", ""])
+
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[+] Generated report: {out_path}")
+
+
+if __name__ == "__main__":
+    main()

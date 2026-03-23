@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_DIR="${PENTEST_BASE:-$HOME/pentest/engagements}"
+
+mapfile -t SESSIONS < <(tmux list-sessions -F "#{session_name} #{session_attached}" 2>/dev/null | awk '$2 == 0 {print $1}')
+
+if [[ ${#SESSIONS[@]} -eq 0 ]]; then
+  echo "[!] No detached tmux sessions found."
+  exit 1
+fi
+
+if [[ ${#SESSIONS[@]} -eq 1 ]]; then
+  SESSION="${SESSIONS[0]}"
+else
+  echo "[*] Available detached sessions:"
+  for i in "${!SESSIONS[@]}"; do
+    printf "  %d) %s\n" "$((i + 1))" "${SESSIONS[$i]}"
+  done
+
+  read -rp "Select session number: " CHOICE
+  if ! [[ "$CHOICE" =~ ^[0-9]+$ ]]; then
+    echo "[!] Invalid selection."
+    exit 1
+  fi
+
+  INDEX=$((CHOICE - 1))
+  if (( INDEX < 0 || INDEX >= ${#SESSIONS[@]} )); then
+    echo "[!] Selection out of range."
+    exit 1
+  fi
+
+  SESSION="${SESSIONS[$INDEX]}"
+fi
+
+ENGAGEMENT_DIR="$BASE_DIR/$SESSION"
+WORKSPACE_FILE="$ENGAGEMENT_DIR/${SESSION}.code-workspace"
+
+echo "[*] Resuming session: $SESSION"
+
+if command -v code >/dev/null 2>&1; then
+  if [[ -f "$WORKSPACE_FILE" ]]; then
+    code -r "$WORKSPACE_FILE" >/dev/null 2>&1 &
+  elif [[ -d "$ENGAGEMENT_DIR" ]]; then
+    code -r "$ENGAGEMENT_DIR" >/dev/null 2>&1 &
+  fi
+fi
+
+if [[ -z "${TMUX:-}" ]]; then
+  exec tmux attach -t "$SESSION"
+else
+  exec tmux switch-client -t "$SESSION"
+fi

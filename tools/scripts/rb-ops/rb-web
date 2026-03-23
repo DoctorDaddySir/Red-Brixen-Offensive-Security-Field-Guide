@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+#
+# Red Brixen Security - OpsKit (RB-OPS)
+# rb-web: create a structured web target workspace under an engagement.
+#
+set -euo pipefail
+
+BASE_DIR="${PENTEST_BASE:-$HOME/pentest/engagements}"
+
+slugify() {
+  echo "$1" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's|https?://||g; s|[^a-z0-9._-]+|_|g; s|^_+||; s|_+$||'
+}
+
+resolve_session() {
+  if [[ -n "${1:-}" ]]; then
+    echo "$1"
+    return 0
+  fi
+
+  if [[ -n "${RB_SESSION:-}" ]]; then
+    echo "$RB_SESSION"
+    return 0
+  fi
+
+  if [[ -n "${TMUX:-}" ]]; then
+    tmux display-message -p '#S'
+    return 0
+  fi
+
+  echo ""
+}
+
+SESSION="$(resolve_session "${1:-}")"
+if [[ -z "$SESSION" ]]; then
+  echo "[!] Could not determine engagement session. Pass it as: rb-web <session>"
+  exit 1
+fi
+
+ENGAGEMENT_DIR="$BASE_DIR/$SESSION"
+WEB_ROOT="$ENGAGEMENT_DIR/10-web"
+
+if [[ ! -d "$ENGAGEMENT_DIR" ]]; then
+  echo "[!] Engagement directory not found: $ENGAGEMENT_DIR"
+  exit 1
+fi
+
+read -rp "Target URL or host: " TARGET_URL
+if [[ -z "${TARGET_URL// }" ]]; then
+  echo "[!] Target URL cannot be empty."
+  exit 1
+fi
+
+read -rp "Workspace name (optional): " WEB_NAME
+if [[ -z "${WEB_NAME// }" ]]; then
+  WEB_NAME="$(slugify "$TARGET_URL")"
+else
+  WEB_NAME="$(slugify "$WEB_NAME")"
+fi
+
+WEB_DIR="$WEB_ROOT/$WEB_NAME"
+if [[ -e "$WEB_DIR" ]]; then
+  echo "[!] Web workspace already exists: $WEB_DIR"
+  exit 1
+fi
+
+mkdir -p "$WEB_DIR"/{notes,recon,screenshots,burp,ffuf,ferox,nuclei,content,params,js,exports}
+
+cat > "$WEB_DIR/notes/notes.md" <<EOF
+# $WEB_NAME
+
+## Target
+$TARGET_URL
+
+## Scope
+-
+
+## Interesting Endpoints
+-
+
+## Auth / Sessions
+-
+
+## Findings
+-
+
+## Next Steps
+-
+EOF
+
+WINDOW_NAME="web-$WEB_NAME"
+tmux new-window -t "$SESSION" -n "$WINDOW_NAME" -c "$WEB_DIR"
+tmux split-window -h -t "$SESSION:$WINDOW_NAME" -c "$WEB_DIR"
+tmux split-window -v -t "$SESSION:$WINDOW_NAME.0" -c "$WEB_DIR"
+
+while IFS= read -r pane; do
+  tmux send-keys -t "$pane" "export TARGET_URL=\"$TARGET_URL\"" C-m
+  tmux send-keys -t "$pane" "clear" C-m
+done < <(tmux list-panes -t "$SESSION:$WINDOW_NAME" -F '#{pane_id}')
+
+tmux send-keys -t "$SESSION:$WINDOW_NAME.0" "cd \"$WEB_DIR/recon\"" C-m
+tmux send-keys -t "$SESSION:$WINDOW_NAME.1" "cd \"$WEB_DIR/ffuf\"" C-m
+tmux send-keys -t "$SESSION:$WINDOW_NAME.2" "cd \"$WEB_DIR/notes\" && ${EDITOR:-vim} notes.md" C-m
+
+tmux select-window -t "$SESSION:$WINDOW_NAME"
+
+echo "[+] Created web workspace: $WEB_DIR"
+echo "[+] Exported TARGET_URL=$TARGET_URL"

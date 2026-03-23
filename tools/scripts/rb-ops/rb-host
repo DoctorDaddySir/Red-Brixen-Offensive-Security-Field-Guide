@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_DIR="${PENTEST_BASE:-$HOME/pentest/engagements}"
+SESSION="${1:-}"
+
+slugify() {
+  printf '%s' "$1" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/[^a-z0-9._-]+/_/g; s/^_+//; s/_+$//'
+}
+
+if [[ -z "$SESSION" ]]; then
+  SESSION="$(tmux display-message -p '#S' 2>/dev/null || true)"
+fi
+
+if [[ -z "$SESSION" ]]; then
+  echo "[!] No tmux session detected."
+  echo "Usage: pt-host <session-name>"
+  exit 1
+fi
+
+ENGAGEMENT_DIR="$BASE_DIR/$SESSION"
+HOSTS_DIR="$ENGAGEMENT_DIR/08-hosts"
+
+if [[ ! -d "$ENGAGEMENT_DIR" ]]; then
+  echo "[!] Engagement directory not found: $ENGAGEMENT_DIR"
+  exit 1
+fi
+
+mkdir -p "$HOSTS_DIR"
+
+read -rp "Host IP / target: " TARGET
+if [[ -z "${TARGET// }" ]]; then
+  echo "[!] Target cannot be empty."
+  exit 1
+fi
+
+read -rp "Host name (optional): " HOST_NAME
+
+get_next_host_number() {
+  local max=0
+  local path name suffix
+
+  shopt -s nullglob
+  for path in "$HOSTS_DIR"/*; do
+    [[ -d "$path" ]] || continue
+    name="$(basename "$path")"
+    if [[ "$name" =~ ^host_([0-9]+)$ ]]; then
+      suffix="${BASH_REMATCH[1]}"
+      (( suffix > max )) && max=$suffix
+    fi
+  done
+  shopt -u nullglob
+
+  echo $((max + 1))
+}
+
+if [[ -z "${HOST_NAME// }" ]]; then
+  HOST_NAME="host_$(get_next_host_number)"
+else
+  HOST_NAME="$(slugify "$HOST_NAME")"
+fi
+
+HOST_DIR="$HOSTS_DIR/$HOST_NAME"
+
+if [[ -e "$HOST_DIR" ]]; then
+  echo "[!] Host directory already exists: $HOST_DIR"
+  exit 1
+fi
+
+mkdir -p "$HOST_DIR/recon"
+mkdir -p "$HOST_DIR/scans"
+mkdir -p "$HOST_DIR/web"
+mkdir -p "$HOST_DIR/exploits"
+mkdir -p "$HOST_DIR/privesc"
+mkdir -p "$HOST_DIR/loot"
+mkdir -p "$HOST_DIR/screenshots"
+mkdir -p "$HOST_DIR/notes"
+
+cat > "$HOST_DIR/notes/notes.md" <<EOF_NOTES
+# $HOST_NAME
+
+## Target
+$TARGET
+
+## Summary
+-
+
+## Services
+-
+
+## Interesting Findings
+-
+
+## Credentials
+-
+
+## Next Steps
+-
+EOF_NOTES
+
+tmux new-window -t "$SESSION" -n "$HOST_NAME" -c "$HOST_DIR"
+tmux split-window -v -t "$SESSION:$HOST_NAME" -c "$HOST_DIR"
+tmux split-window -h -t "$SESSION:$HOST_NAME.1" -c "$HOST_DIR"
+
+while IFS= read -r pane; do
+  tmux send-keys -t "$pane" "export TARGET=\"$TARGET\"" C-m
+  tmux send-keys -t "$pane" "clear" C-m
+done < <(tmux list-panes -t "$SESSION:$HOST_NAME" -F '#{pane_id}')
+
+tmux send-keys -t "$SESSION:$HOST_NAME.0" "cd \"$HOST_DIR/recon\"" C-m
+tmux send-keys -t "$SESSION:$HOST_NAME.1" "cd \"$HOST_DIR/scans\"" C-m
+tmux send-keys -t "$SESSION:$HOST_NAME.2" "cd \"$HOST_DIR/notes\" && ${EDITOR:-vim} notes.md" C-m
+
+tmux select-window -t "$SESSION:$HOST_NAME"
+
+echo "[+] Created host workspace: $HOST_NAME"
+echo "[+] Target exported as TARGET=$TARGET"
+echo "[+] Host directory: $HOST_DIR"

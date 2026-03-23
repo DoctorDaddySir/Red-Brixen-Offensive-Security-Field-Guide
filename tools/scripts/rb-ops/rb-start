@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_DIR="${PENTEST_BASE:-$HOME/pentest/engagements}"
+
+slugify() {
+  printf '%s' "$1" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/[^a-z0-9]+/_/g; s/^_+//; s/_+$//'
+}
+
+read -rp "Engagement name: " ENGAGEMENT_NAME
+if [[ -z "${ENGAGEMENT_NAME// }" ]]; then
+  echo "[-] Engagement name cannot be empty."
+  exit 1
+fi
+
+SESSION_NAME="$(slugify "$ENGAGEMENT_NAME")"
+ENGAGEMENT_DIR="$BASE_DIR/$SESSION_NAME"
+WORKSPACE_FILE="$ENGAGEMENT_DIR/${SESSION_NAME}.code-workspace"
+
+if [[ -e "$ENGAGEMENT_DIR" ]]; then
+  echo "[-] Directory already exists: $ENGAGEMENT_DIR"
+  exit 1
+fi
+
+mkdir -p "$ENGAGEMENT_DIR"
+mkdir -p "$ENGAGEMENT_DIR/00-scoping"
+mkdir -p "$ENGAGEMENT_DIR/01-admin"
+mkdir -p "$ENGAGEMENT_DIR/02-intel"
+mkdir -p "$ENGAGEMENT_DIR/03-recon"
+mkdir -p "$ENGAGEMENT_DIR/04-scans"
+mkdir -p "$ENGAGEMENT_DIR/05-loot"
+mkdir -p "$ENGAGEMENT_DIR/06-evidence"
+mkdir -p "$ENGAGEMENT_DIR/07-reporting"
+mkdir -p "$ENGAGEMENT_DIR/08-hosts"
+mkdir -p "$ENGAGEMENT_DIR/09-credentials"
+mkdir -p "$ENGAGEMENT_DIR/10-web"
+mkdir -p "$ENGAGEMENT_DIR/11-ad"
+mkdir -p "$ENGAGEMENT_DIR/12-privesc"
+mkdir -p "$ENGAGEMENT_DIR/13-persistence"
+mkdir -p "$ENGAGEMENT_DIR/14-cleanup"
+
+cat > "$ENGAGEMENT_DIR/notes.md" <<EOF_NOTES
+# $ENGAGEMENT_NAME Notes
+
+## Objective
+-
+
+## Key Findings
+-
+
+## Next Actions
+-
+
+## Important Hosts
+-
+
+## Credentials
+-
+
+## Evidence
+-
+EOF_NOTES
+
+cat > "$ENGAGEMENT_DIR/scope.md" <<EOF_SCOPE
+# $ENGAGEMENT_NAME Scope
+
+## Client / Environment
+-
+
+## In-Scope Targets
+-
+
+## Out-of-Scope Targets
+-
+
+## Testing Window
+-
+
+## Constraints
+-
+
+## Notes
+-
+EOF_SCOPE
+
+cat > "$WORKSPACE_FILE" <<EOF_WORKSPACE
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "terminal.integrated.cwd": "$ENGAGEMENT_DIR"
+  }
+}
+EOF_WORKSPACE
+
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+  echo "[-] tmux session already exists: $SESSION_NAME"
+  exit 1
+fi
+
+tmux new-session -d -s "$SESSION_NAME" -n "command" -c "$ENGAGEMENT_DIR"
+tmux new-window -t "$SESSION_NAME" -n "notes" -c "$ENGAGEMENT_DIR"
+tmux send-keys -t "$SESSION_NAME:notes" "cd \"$ENGAGEMENT_DIR\" && ${EDITOR:-vim} notes.md" C-m
+tmux new-window -t "$SESSION_NAME" -n "reporting" -c "$ENGAGEMENT_DIR/07-reporting"
+tmux new-window -t "$SESSION_NAME" -n "loot" -c "$ENGAGEMENT_DIR/05-loot"
+tmux select-window -t "$SESSION_NAME:command"
+
+if command -v code >/dev/null 2>&1; then
+  code -r "$WORKSPACE_FILE" >/dev/null 2>&1 &
+fi
+
+echo "[+] Created engagement directory: $ENGAGEMENT_DIR"
+echo "[+] Started tmux session: $SESSION_NAME"
+echo "[+] Windows: command, notes, reporting, loot"
+
+if [[ -z "${TMUX:-}" ]]; then
+  exec tmux attach -t "$SESSION_NAME"
+else
+  echo "[*] Already inside tmux. Switch with:"
+  echo "    tmux switch-client -t $SESSION_NAME"
+fi

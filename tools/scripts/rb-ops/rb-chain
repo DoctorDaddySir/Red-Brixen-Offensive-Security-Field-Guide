@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""
+Red Brixen Security - rb-chain
+Engagement-local exploit chain tracker for RB-OPS.
+Requires an active tmux session; stores data in:
+  $PENTEST_BASE/<session>/.redbrixen/opskit.db
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sqlite3
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
+
+
+def fail(msg: str) -> None:
+    print(f"[!] {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def engagement_context() -> tuple[str, Path, Path]:
+    if not os.environ.get("TMUX"):
+        fail("rb-chain must be run from inside an active tmux engagement session.")
+    try:
+        session = subprocess.check_output(["tmux", "display-message", "-p", "#S"], stderr=subprocess.DEVNULL, text=True).strip()
+    except Exception:
+        fail("Failed to determine tmux session name.")
+    if not session:
+        fail("Failed to determine tmux session name.")
+    base = Path(os.environ.get("PENTEST_BASE", DEFAULT_BASE)).expanduser()
+    engagement_dir = base / session
+    if not engagement_dir.is_dir():
+        fail(f"Engagement directory not found for tmux session '{session}': {engagement_dir}")
+    meta_dir = engagement_dir / ".redbrixen"
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    db_path = meta_dir / "opskit.db"
+    return session, engagement_dir, db_path
+
+
+def connect() -> sqlite3.Connection:
+    _, _, db_path = engagement_context()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    init_db(conn)
+    return conn
+
+
+def init_db(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS exploit_chain_steps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            step_order INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            tactic TEXT DEFAULT '',
+            host TEXT DEFAULT '',
+            command TEXT DEFAULT '',
+            outcome TEXT DEFAULT '',
+            evidence_path TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+        """
+    )
+    conn.commit()
+
+
+def next_order(conn: sqlite3.Connection) -> int:
+    row = conn.execute("SELECT COALESCE(MAX(step_order), 0) + 1 AS next_step FROM exploit_chain_steps").fetchone()
+    return int(row["next_step"])
+
+
+def add_step(args: argparse.Namespace) -> None:
+    conn = connect()
+    step_order = args.order if args.order is not None else next_order(conn)
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    conn.execute(
+        """
+        INSERT INTO exploit_chain_steps (step_order, title, tactic, host, command, outcome, evidence_path, notes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (step_order, args.title, args.tactic, args.host, args.command, args.outcome, args.evidence, args.notes, now),
+    )
+    conn.commit()
+    print(f"[+] Added chain step {step_order}.")
+
+
+def list_steps(_: argparse.Namespace) -> None:
+    conn = connect()
+    rows = conn.execute("SELECT * FROM exploit_chain_steps ORDER BY step_order, id").fetchall()
+    if not rows:
+        print("[*] No exploit chain steps found.")
+        return
+    for r in rows:
+        print(f"[{r['id']}] step={r['step_order']} | {r['title']} | tactic={r['tactic'] or '-'} | host={r['host'] or '-'}")
+        if r["command"]:
+            print(f"    command: {r['command']}")
+        if r["outcome"]:
+            print(f"    outcome: {r['outcome']}")
+        if r["evidence_path"]:
+            print(f"    evidence: {r['evidence_path']}")
+        if r["notes"]:
+            print(f"    notes: {r['notes']}")
+
+
+def update_step(args: argparse.Namespace) -> None:
+    conn = connect()
+    row = conn.execute("SELECT * FROM exploit_chain_steps WHERE id = ?", (args.step_id,)).fetchone()
+    if not row:
+        fail(f"Step id {args.step_id} not found.")
+    fields = {
+        "step_order": args.order if args.order is not None else row["step_order"],
+        "title": args.title if args.title is not None else row["title"],
+        "tactic": args.tactic if args.tactic is not None else row["tactic"],
+        "host": args.host if args.host is not None else row["host"],
+        "command": args.command if args.command is not None else row["command"],
+        "outcome": args.outcome if args.outcome is not None else row["outcome"],
+        "evidence_path": args.evidence if args.evidence is not None else row["evidence_path"],
+        "notes": args.notes if args.notes is not None else row["notes"],
+    }
+    conn.execute(
+        """
+        UPDATE exploit_chain_steps
+        SET step_order = ?, title = ?, tactic = ?, host = ?, command = ?, outcome = ?, evidence_path = ?, notes = ?
+        WHERE id = ?
+        """,
+        (fields["step_order"], fields["title"], fields["tactic"], fields["host"], fields["command"], fields["outcome"], fields["evidence_path"], fields["notes"], args.step_id),
+    )
+    conn.commit()
+    print(f"[+] Updated step {args.step_id}.")
+
+
+def export_markdown(args: argparse.Namespace) -> None:
+    session, engagement_dir, _ = engagement_context()
+    conn = connect()
+    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "attack_chain.md"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    rows = conn.execute("SELECT * FROM exploit_chain_steps ORDER BY step_order, id").fetchall()
+    lines = [f"# Attack Chain - {session}", ""]
+    if not rows:
+        lines.append("No exploit chain steps recorded.")
+    else:
+        for r in rows:
+            lines.append(f"## Step {r['step_order']}: {r['title']}")
+            lines.append(f"- Tactic: {r['tactic'] or '-'}")
+            lines.append(f"- Host: {r['host'] or '-'}")
+            if r['command']:
+                lines.append("- Command:")
+                lines.append("```text")
+                lines.append(r['command'])
+                lines.append("```")
+            lines.append(f"- Outcome: {r['outcome'] or '-'}")
+            lines.append(f"- Evidence: {r['evidence_path'] or '-'}")
+            if r['notes']:
+                lines.append(f"- Notes: {r['notes']}")
+            lines.append("")
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[+] Exported attack chain markdown: {out_path}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Red Brixen exploit chain tracker.")
+    sub = p.add_subparsers(dest="command", required=True)
+
+    add = sub.add_parser("add", help="Add a chain step")
+    add.add_argument("title")
+    add.add_argument("--order", type=int)
+    add.add_argument("--tactic", default="")
+    add.add_argument("--host", default="")
+    add.add_argument("--command", default="")
+    add.add_argument("--outcome", default="")
+    add.add_argument("--evidence", default="")
+    add.add_argument("--notes", default="")
+    add.set_defaults(func=add_step)
+
+    ls = sub.add_parser("list", help="List chain steps")
+    ls.set_defaults(func=list_steps)
+
+    upd = sub.add_parser("update", help="Update a chain step")
+    upd.add_argument("step_id", type=int)
+    upd.add_argument("--order", type=int)
+    upd.add_argument("--title")
+    upd.add_argument("--tactic")
+    upd.add_argument("--host")
+    upd.add_argument("--command")
+    upd.add_argument("--outcome")
+    upd.add_argument("--evidence")
+    upd.add_argument("--notes")
+    upd.set_defaults(func=update_step)
+
+    exp = sub.add_parser("export", help="Export chain to markdown")
+    exp.add_argument("--output", default="")
+    exp.set_defaults(func=export_markdown)
+    return p
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

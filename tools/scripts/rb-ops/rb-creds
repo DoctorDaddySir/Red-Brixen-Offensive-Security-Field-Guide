@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+"""
+Red Brixen Security - rb-creds
+Engagement-local credential manager for RB-OPS.
+Requires an active tmux session; stores data in:
+  $PENTEST_BASE/<session>/.redbrixen/opskit.db
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sqlite3
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
+
+
+def fail(msg: str) -> None:
+    print(f"[!] {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def engagement_context() -> tuple[str, Path, Path]:
+    if not os.environ.get("TMUX"):
+        fail("rb-creds must be run from inside an active tmux engagement session.")
+
+    try:
+        session = subprocess.check_output(
+            ["tmux", "display-message", "-p", "#S"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except Exception:
+        fail("Failed to determine tmux session name.")
+
+    if not session:
+        fail("Failed to determine tmux session name.")
+
+    base = Path(os.environ.get("PENTEST_BASE", DEFAULT_BASE)).expanduser()
+    engagement_dir = base / session
+    if not engagement_dir.is_dir():
+        fail(f"Engagement directory not found for tmux session '{session}': {engagement_dir}")
+
+    meta_dir = engagement_dir / ".redbrixen"
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    db_path = meta_dir / "opskit.db"
+    return session, engagement_dir, db_path
+
+
+def connect() -> sqlite3.Connection:
+    _, _, db_path = engagement_context()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    init_db(conn)
+    return conn
+
+
+def init_db(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS credentials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            secret TEXT NOT NULL,
+            kind TEXT DEFAULT 'password',
+            host TEXT DEFAULT '',
+            service TEXT DEFAULT '',
+            source TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            validated INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS credential_validations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            credential_id INTEGER NOT NULL,
+            host TEXT DEFAULT '',
+            service TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (credential_id) REFERENCES credentials(id)
+        );
+        """
+    )
+    conn.commit()
+
+
+def add_credential(args: argparse.Namespace) -> None:
+    conn = connect()
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    conn.execute(
+        """
+        INSERT INTO credentials (username, secret, kind, host, service, source, notes, validated, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+        """,
+        (args.username, args.secret, args.kind, args.host, args.service, args.source, args.notes, now),
+    )
+    conn.commit()
+    print("[+] Credential added.")
+
+
+def list_credentials(args: argparse.Namespace) -> None:
+    conn = connect()
+    query = "SELECT * FROM credentials"
+    params = []
+    if args.validated_only:
+        query += " WHERE validated = 1"
+    query += " ORDER BY id"
+    rows = conn.execute(query, params).fetchall()
+    if not rows:
+        print("[*] No credentials found.")
+        return
+    for r in rows:
+        state = "validated" if r["validated"] else "unvalidated"
+        print(f"[{r['id']}] {r['username']} | kind={r['kind']} | host={r['host'] or '-'} | service={r['service'] or '-'} | {state}")
+        if args.show_secrets:
+            print(f"    secret: {r['secret']}")
+        if r["source"]:
+            print(f"    source: {r['source']}")
+        if r["notes"]:
+            print(f"    notes: {r['notes']}")
+
+
+def validate_credential(args: argparse.Namespace) -> None:
+    conn = connect()
+    row = conn.execute("SELECT id FROM credentials WHERE id = ?", (args.credential_id,)).fetchone()
+    if not row:
+        fail(f"Credential id {args.credential_id} not found.")
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    conn.execute("UPDATE credentials SET validated = 1 WHERE id = ?", (args.credential_id,))
+    conn.execute(
+        """
+        INSERT INTO credential_validations (credential_id, host, service, notes, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (args.credential_id, args.host, args.service, args.notes, now),
+    )
+    conn.commit()
+    print("[+] Credential validation recorded.")
+
+
+def export_markdown(args: argparse.Namespace) -> None:
+    session, engagement_dir, _ = engagement_context()
+    conn = connect()
+    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "credentials.md"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    creds = conn.execute("SELECT * FROM credentials ORDER BY id").fetchall()
+    vals = conn.execute("SELECT * FROM credential_validations ORDER BY credential_id, id").fetchall()
+    vals_by_cred: dict[int, list[sqlite3.Row]] = {}
+    for v in vals:
+        vals_by_cred.setdefault(v["credential_id"], []).append(v)
+
+    lines = [f"# Credentials - {session}", ""]
+    if not creds:
+        lines.append("No credentials recorded.")
+    else:
+        for c in creds:
+            lines.append(f"## [{c['id']}] {c['username']}")
+            lines.append(f"- Kind: {c['kind']}")
+            lines.append(f"- Secret: `{c['secret']}`")
+            lines.append(f"- Host: {c['host'] or '-'}")
+            lines.append(f"- Service: {c['service'] or '-'}")
+            lines.append(f"- Source: {c['source'] or '-'}")
+            lines.append(f"- Validated: {'Yes' if c['validated'] else 'No'}")
+            lines.append(f"- Created: {c['created_at']}")
+            if c['notes']:
+                lines.append(f"- Notes: {c['notes']}")
+            if vals_by_cred.get(c['id']):
+                lines.append("- Validation Events:")
+                for v in vals_by_cred[c['id']]:
+                    lines.append(f"  - {v['created_at']} | host={v['host'] or '-'} | service={v['service'] or '-'} | {v['notes'] or '-'}")
+            lines.append("")
+
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[+] Exported credential markdown: {out_path}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Red Brixen engagement credential manager.")
+    sub = p.add_subparsers(dest="command", required=True)
+
+    add = sub.add_parser("add", help="Add a credential")
+    add.add_argument("username")
+    add.add_argument("secret")
+    add.add_argument("--kind", default="password")
+    add.add_argument("--host", default="")
+    add.add_argument("--service", default="")
+    add.add_argument("--source", default="")
+    add.add_argument("--notes", default="")
+    add.set_defaults(func=add_credential)
+
+    ls = sub.add_parser("list", help="List credentials")
+    ls.add_argument("--show-secrets", action="store_true")
+    ls.add_argument("--validated-only", action="store_true")
+    ls.set_defaults(func=list_credentials)
+
+    val = sub.add_parser("validate", help="Record a validation event")
+    val.add_argument("credential_id", type=int)
+    val.add_argument("--host", default="")
+    val.add_argument("--service", default="")
+    val.add_argument("--notes", default="")
+    val.set_defaults(func=validate_credential)
+
+    exp = sub.add_parser("export", help="Export credentials to markdown")
+    exp.add_argument("--output", default="")
+    exp.set_defaults(func=export_markdown)
+    return p
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""
+Red Brixen Security - rb-findings
+Interactive findings tracker for RB-OPS.
+Requires an active tmux session; stores data in:
+  $PENTEST_BASE/<session>/.redbrixen/opskit.db
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sqlite3
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
+AV = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
+AC = {"L": 0.77, "H": 0.44}
+PR_U = {"N": 0.85, "L": 0.62, "H": 0.27}
+PR_C = {"N": 0.85, "L": 0.68, "H": 0.5}
+UI = {"N": 0.85, "R": 0.62}
+CIA = {"H": 0.56, "L": 0.22, "N": 0.0}
+SEVERITY = [(0.0, "None"), (0.1, "Low"), (4.0, "Medium"), (7.0, "High"), (9.0, "Critical")]
+
+
+def fail(msg: str) -> None:
+    print(f"[!] {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def roundup_1(x: float) -> float:
+    import math
+    return math.ceil(x * 10) / 10.0
+
+
+def cvss_base_score(vector: dict[str, str]) -> float:
+    import math
+    iss = 1 - ((1 - CIA[vector['C']]) * (1 - CIA[vector['I']]) * (1 - CIA[vector['A']]))
+    if vector['S'] == 'U':
+        impact = 6.42 * iss
+        pr = PR_U[vector['PR']]
+    else:
+        impact = 7.52 * (iss - 0.029) - 3.25 * ((iss - 0.02) ** 15)
+        pr = PR_C[vector['PR']]
+    exploitability = 8.22 * AV[vector['AV']] * AC[vector['AC']] * pr * UI[vector['UI']]
+    if impact <= 0:
+        return 0.0
+    if vector['S'] == 'U':
+        score = min(impact + exploitability, 10)
+    else:
+        score = min(1.08 * (impact + exploitability), 10)
+    return roundup_1(score)
+
+
+def severity_label(score: float) -> str:
+    if score == 0.0:
+        return "None"
+    if score >= 9.0:
+        return "Critical"
+    if score >= 7.0:
+        return "High"
+    if score >= 4.0:
+        return "Medium"
+    return "Low"
+
+
+def engagement_context() -> tuple[str, Path, Path]:
+    if not os.environ.get("TMUX"):
+        fail("rb-findings must be run from inside an active tmux engagement session.")
+    try:
+        session = subprocess.check_output(["tmux", "display-message", "-p", "#S"], stderr=subprocess.DEVNULL, text=True).strip()
+    except Exception:
+        fail("Failed to determine tmux session name.")
+    if not session:
+        fail("Failed to determine tmux session name.")
+    base = Path(os.environ.get("PENTEST_BASE", DEFAULT_BASE)).expanduser()
+    engagement_dir = base / session
+    if not engagement_dir.is_dir():
+        fail(f"Engagement directory not found for tmux session '{session}': {engagement_dir}")
+    meta_dir = engagement_dir / ".redbrixen"
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    db_path = meta_dir / "opskit.db"
+    return session, engagement_dir, db_path
+
+
+def connect() -> sqlite3.Connection:
+    _, _, db_path = engagement_context()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    init_db(conn)
+    return conn
+
+
+def init_db(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS findings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            host TEXT DEFAULT '',
+            cvss_vector TEXT NOT NULL,
+            cvss_score REAL NOT NULL,
+            severity TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        """
+    )
+    conn.commit()
+
+
+def ask(prompt: str, default: str = "") -> str:
+    suffix = f" [{default}]" if default else ""
+    value = input(f"{prompt}{suffix}: ").strip()
+    return value or default
+
+
+def ask_choice(prompt: str, valid: tuple[str, ...], default: str) -> str:
+    valid_display = "/".join(valid)
+    while True:
+        v = ask(f"{prompt} ({valid_display})", default).upper()
+        if v in valid:
+            return v
+        print(f"[!] Choose one of: {valid_display}")
+
+
+def interactive_add(_: argparse.Namespace) -> None:
+    session, _, _ = engagement_context()
+    conn = connect()
+
+    print(f"[*] Red Brixen Security | finding entry for session: {session}")
+    title = ask("Finding title")
+    if not title:
+        fail("Title is required.")
+    description = ask("Basic description")
+    if not description:
+        fail("Description is required.")
+    host = ask("Affected host / scope item", "")
+
+    print("\n[*] Answer CVSS v3.1 base metric questions.")
+    vector = {
+        "AV": ask_choice("Attack Vector", ("N", "A", "L", "P"), "N"),
+        "AC": ask_choice("Attack Complexity", ("L", "H"), "L"),
+        "PR": ask_choice("Privileges Required", ("N", "L", "H"), "N"),
+        "UI": ask_choice("User Interaction", ("N", "R"), "N"),
+        "S": ask_choice("Scope", ("U", "C"), "U"),
+        "C": ask_choice("Confidentiality Impact", ("H", "L", "N"), "H"),
+        "I": ask_choice("Integrity Impact", ("H", "L", "N"), "H"),
+        "A": ask_choice("Availability Impact", ("H", "L", "N"), "L"),
+    }
+    score = cvss_base_score(vector)
+    sev = severity_label(score)
+    vector_str = f"CVSS:3.1/AV:{vector['AV']}/AC:{vector['AC']}/PR:{vector['PR']}/UI:{vector['UI']}/S:{vector['S']}/C:{vector['C']}/I:{vector['I']}/A:{vector['A']}"
+
+    print(f"\n[+] CVSS Vector: {vector_str}")
+    print(f"[+] CVSS Score : {score}")
+    print(f"[+] Severity   : {sev}")
+    confirm = ask_choice("Save this finding", ("Y", "N"), "Y")
+    if confirm != "Y":
+        print("[*] Aborted. Finding not saved.")
+        return
+
+    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    conn.execute(
+        """
+        INSERT INTO findings (title, description, host, cvss_vector, cvss_score, severity, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (title, description, host, vector_str, score, sev, now),
+    )
+    conn.commit()
+    print("[+] Finding saved.")
+
+
+def list_findings(_: argparse.Namespace) -> None:
+    conn = connect()
+    rows = conn.execute("SELECT * FROM findings ORDER BY cvss_score DESC, id ASC").fetchall()
+    if not rows:
+        print("[*] No findings recorded.")
+        return
+    for r in rows:
+        print(f"[{r['id']}] {r['title']} | severity={r['severity']} | cvss={r['cvss_score']} | host={r['host'] or '-'}")
+        print(f"    vector: {r['cvss_vector']}")
+        print(f"    desc  : {r['description']}")
+
+
+def export_markdown(args: argparse.Namespace) -> None:
+    session, engagement_dir, _ = engagement_context()
+    conn = connect()
+    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "findings.md"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    rows = conn.execute("SELECT * FROM findings ORDER BY cvss_score DESC, id ASC").fetchall()
+    lines = [f"# Findings - {session}", ""]
+    if not rows:
+        lines.append("No findings recorded.")
+    else:
+        for r in rows:
+            lines.append(f"## [{r['id']}] {r['title']}")
+            lines.append(f"- Severity: {r['severity']}")
+            lines.append(f"- CVSS Score: {r['cvss_score']}")
+            lines.append(f"- CVSS Vector: `{r['cvss_vector']}`")
+            lines.append(f"- Affected Host / Scope Item: {r['host'] or '-'}")
+            lines.append("- Description:")
+            lines.append(r['description'])
+            lines.append("")
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[+] Exported findings markdown: {out_path}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Red Brixen findings tracker.")
+    sub = p.add_subparsers(dest="command", required=True)
+    add = sub.add_parser("add", help="Interactively add a finding")
+    add.set_defaults(func=interactive_add)
+    ls = sub.add_parser("list", help="List findings")
+    ls.set_defaults(func=list_findings)
+    exp = sub.add_parser("export", help="Export findings to markdown")
+    exp.add_argument("--output", default="")
+    exp.set_defaults(func=export_markdown)
+    return p
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
