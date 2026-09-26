@@ -2,6 +2,8 @@
 
 **Lab-validated:** Ligolo-ng 0.9.2, Linux amd64, 2026-09-26. The [verification record](../labs/ligolo/result.json) and [reproducible lab](../labs/ligolo/README.md) show successful routed HTTP, a stopped-tunnel negative control, and cleanup. Commands below use the flags and operations exercised by that fixture; substitute only the documented engagement inputs.
 
+This is a manual field procedure. Run each block in its named terminal, inspect the result, and choose the next step yourself. The automated lab is supporting verification evidence; it is not required to perform this procedure.
+
 Topology: operator/proxy → agent/pivot → approved internal destination. The agent initiates the TLS connection to the proxy. A TUN interface on the operator carries the selected destination traffic; this does not imply authorization for every agent-reachable network.
 
 ## 1. Prepare the binaries and scope
@@ -82,19 +84,20 @@ Expected: `Starting tunnel` for that agent. Match its identity to the scope reco
 
 ## 6. Second operator Bash terminal: add the narrow route and verify
 
-Use a numeric IPv4 destination reachable from the agent and a known synthetic HTTP proof endpoint for the lab:
+Use a numeric IPv4 destination reachable from the agent and an HTTP endpoint approved for this assessment. Choose the actual application path; `/proof.txt` is only a fixture used by the accompanying lab. For other protocols, validate with that service’s client instead of inventing an HTTP endpoint:
 
 ```bash
 read -r -p 'Approved internal IPv4 destination: ' DESTINATION_IP
 read -r -p 'Approved HTTP TCP port: ' DESTINATION_PORT
+read -r -p 'Approved HTTP path, beginning with /: ' TEST_PATH
 sudo ip route add "${DESTINATION_IP}/32" dev rbligolo
 ip route get "$DESTINATION_IP"
 curl --noproxy '*' --silent --show-error --fail \
   --connect-timeout 2 --max-time 4 \
-  "http://${DESTINATION_IP}:${DESTINATION_PORT}/proof.txt"
+  "http://${DESTINATION_IP}:${DESTINATION_PORT}${TEST_PATH}"
 ```
 
-Expected in the supplied lab: `red-brixen-ligolo-proof`. Before tunneling the same operator request must fail, while the agent's request succeeds. If direct operator access already succeeds, that environment cannot establish the tunnel as the exclusive path. A connection alone does not establish a security finding.
+Expected during an assessment: the response from the intended application. Confirm it is the correct service; an HTTP 401/403 is evidence of an authentication boundary, not automatically a failed tunnel (`curl --fail` returns nonzero for these responses). A timeout requires route and reachability checks before further testing. In the supplied lab, `/proof.txt` returns `red-brixen-ligolo-proof`. Before tunneling the same operator request must fail, while the agent's request succeeds. If direct operator access already succeeds, that environment cannot establish the tunnel as the exclusive path. A connection alone does not establish a security finding.
 
 The route deliberately uses /32. Broader prefixes need a separate scope and route review. A ping is not a substitute for testing the application protocol. HTTPS requires correct hostname/SNI and certificate validation.
 
@@ -127,6 +130,8 @@ Stop the foreground agent and proxy processes with Ctrl-C. Remove only the trans
 | UDP/ICMP | Not validated by this lab; do not infer support from the TCP result |
 | Windows agent/proxy | Requires architecture-specific binaries and a separate lab record |
 | Reverse listeners and double pivots | Planned; use primary references for research, not a verified command claim |
+
+For evidence, retain the selected agent identity, before/after route output, sanitized setup commands, requested destination/path, timestamped application result, and cleanup confirmation. Record unexpected errors and untested protocols as limitations. Do not include the TLS private key or authentication secrets in a client report.
 
 Record versions, topology, sanitized commands, timestamps, destination result, negative control and cleanup with the finding. If the path proves an unintended segmentation boundary crossing, describe the intended policy and observed access, recommend scoped network/service controls, and retest from the same source.
 
