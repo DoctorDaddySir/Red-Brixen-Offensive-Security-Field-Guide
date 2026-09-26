@@ -51,6 +51,23 @@ Record denied queries as coverage limitations. An unquoted path is only a candid
 
 Linked references are existing material with their own verification needs. Review prerequisites rather than assuming a named technique works on every Windows build.
 
+### Credential reuse check
+
+Before assuming local-only escalation, check whether any credentials found on this host or
+discovered elsewhere in the engagement can be reused. On Windows, inspect credential stores:
+
+```cmd
+cmdkey /list
+```
+
+```powershell
+sekurlsa::logonpasswords
+```
+
+Cross-check any found domain credentials against other in-scope systems (SMB, WinRM, RDP).
+Reuse is out-of-scope without explicit authorization and must be recorded as a finding with
+redacted secrets.
+
 ## 4. Validate the smallest relevant boundary
 
 Agree on the allowed change, interruption window, and restoration steps before changing services, tasks, files, or accounts. Preserve the original configuration and ACLs. Prefer a lab clone if validation could interrupt the host.

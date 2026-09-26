@@ -1,6 +1,6 @@
 # Red Brixen Security - RB-OPS
 
-RB-OPS is a terminal-first engagement workspace toolkit for penetration testing workflows.
+RB-OPS is an optional terminal-first engagement workspace toolkit. The field guide, manual procedures, and standalone reporting templates do not require these commands, tmux, SQLite, or the generated directory structure. The dependencies below apply only when a tester chooses to use RB-OPS.
 
 ## Current Commands
 

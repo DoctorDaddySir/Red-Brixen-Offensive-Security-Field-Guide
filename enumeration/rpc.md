@@ -154,16 +154,19 @@ Covers:
 
 ---
 
-## 10. CrackMapExec Integration
+## 10. NetExec Integration
+
+NetExec is the maintained community successor to CrackMapExec. Prefer `netexec`; `crackmapexec` is
+retained as a legacy alias where already installed.
 
 ```bash id="5c0v7q"
-crackmapexec smb <IP>
+netexec smb <IP>
 ```
 
 With creds:
 
 ```bash id="8s0m2n"
-crackmapexec smb <IP> -u user -p pass
+netexec smb <IP> -u user -p pass
 ```
 
 ---
@@ -175,7 +178,7 @@ Once users are found:
 Test:
 
 ```bash id="xg2pl5"
-crackmapexec smb <IP> -u users.txt -p passwords.txt
+netexec smb <IP> -u users.txt -p passwords.txt
 ```
 
 ---

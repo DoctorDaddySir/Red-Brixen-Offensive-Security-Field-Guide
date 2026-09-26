@@ -72,7 +72,7 @@ With creds:
 ```bash
 smbclient -L //<IP> -U 'DOMAIN\user%pass'
 smbmap -H <IP> -u user -p pass -d DOMAIN
-crackmapexec smb <IP> -u user -p pass -d DOMAIN
+netexec smb <IP> -u user -p pass -d DOMAIN
 ```
 
 Dump shares:
@@ -111,6 +111,18 @@ With creds:
 ldapsearch -x -H ldap://<IP> -D 'DOMAIN\user' -w 'pass' -b "DC=domain,DC=local"
 ```
 
+### Guest / anonymous check
+
+Check whether anonymous LDAP search is permitted and whether the guest account is enabled —
+both are common misconfigurations that justify authenticated follow-up:
+
+```bash
+# Anonymous bind — should be denied in a hardened environment
+ldapsearch -x -H ldap://<IP> -b "DC=domain,DC=local" -s base "(objectclass=*)"
+# Guest-enabled check (with any creds)
+netexec ldap <IP> -u user -p pass --users | grep -i guest
+```
+
 Extract:
 
 * users
@@ -120,18 +132,21 @@ Extract:
 
 ---
 
-## 4. CrackMapExec Enumeration
+## 4. NetExec Enumeration
+
+NetExec is the maintained community successor to CrackMapExec. Prefer `netexec` for
+authenticated enumeration; `crackmapexec` is retained as a legacy alias where already installed.
 
 ```bash
-crackmapexec smb <targets.txt> -u user -p pass -d DOMAIN
+netexec smb <targets.txt> -u user -p pass -d DOMAIN
 ```
 
 ```bash
-crackmapexec ldap <IP> -u user -p pass -d DOMAIN
+netexec ldap <IP> -u user -p pass -d DOMAIN
 ```
 
 ```bash
-crackmapexec winrm <targets.txt> -u user -p pass -d DOMAIN
+netexec winrm <targets.txt> -u user -p pass -d DOMAIN
 ```
 
 ---
@@ -163,7 +178,7 @@ GetNPUsers.py DOMAIN.LOCAL/ -dc-ip <IP> -usersfile users.txt -no-pass
 
 ---
 
-### Kerberoast
+### Kerberroast
 
 ```bash
 GetUserSPNs.py DOMAIN.LOCAL/user:pass -dc-ip <IP> -request
@@ -173,11 +188,25 @@ GetUserSPNs.py DOMAIN.LOCAL/user:pass -dc-ip <IP> -request
 
 ## 7. BloodHound Collection
 
+Primary collector — run with domain credentials:
+
 ```bash
 bloodhound-python -u user -p pass -ns <DC_IP> -d domain.local -c All
 ```
 
 Upload to BloodHound.
+
+Alternative over LDAP (useful when SMB from your position is filtered):
+
+```bash
+netexec ldap <IP> -u user -p pass --bloodhound --dns-tcp <DC_IP> -d domain.local
+```
+
+Sharphound can also be run locally on a compromised target if network collection is restricted:
+
+```bash
+.\Sharphound.exe -c all
+```
 
 ---
 
@@ -221,7 +250,7 @@ Upload to BloodHound.
 Test creds on:
 
 ```bash
-crackmapexec smb <targets.txt> -u user -p pass -d DOMAIN
-crackmapexec winrm <targets.txt> -u user -p pass -d DOMAIN
-crackmapexec rdp <targets.txt> -u use
+netexec smb <targets.txt> -u user -p pass -d DOMAIN
+netexec winrm <targets.txt> -u user -p pass -d DOMAIN
+netexec rdp <targets.txt> -u user -p pass -d DOMAIN
 ```

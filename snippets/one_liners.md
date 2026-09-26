@@ -129,8 +129,8 @@ curl -I http://<IP>
 ```bash
 smbclient -L //<IP> -N
 enum4linux -a <IP>
-crackmapexec smb <IP> --shares
-crackmapexec smb <IP> --users
+netexec smb <IP> --shares
+netexec smb <IP> --users
 smbclient //<IP>/share -U user
 ```
 
@@ -258,9 +258,9 @@ findstr /S /I password *.txt *.ini *.config *.xml
 # 14. HASH / CREDENTIAL USE
 
 ```bash
-crackmapexec smb <IP> -u user -p pass
-crackmapexec winrm <IP> -u user -p pass
-crackmapexec ldap <IP> -u user -p pass -d DOMAIN
+netexec smb <IP> -u user -p pass
+netexec winrm <IP> -u user -p pass
+netexec ldap <IP> -u user -p pass -d DOMAIN
 ```
 
 ```bash

@@ -9,7 +9,7 @@ Move between systems
 ## SMB
 
 ```bash
-crackmapexec smb <IP> -u user -p pass
+netexec smb <IP> -u user -p pass
 ```
 
 ---

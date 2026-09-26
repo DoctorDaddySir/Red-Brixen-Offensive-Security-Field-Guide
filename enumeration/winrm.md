@@ -31,7 +31,7 @@ nmap -p 5985,5986 -sV <IP>
 ## 1. Credential Validation (FAST)
 
 ```bash id="sl1m33"
-crackmapexec winrm <IP> -u user -p pass
+netexec winrm <IP> -u user -p pass
 ```
 
 If success:

@@ -29,16 +29,16 @@ nmap -p 1433 -sV <IP>
 
 ## 1. Initial Access
 
-### CrackMapExec
+### NetExec
 
 ```bash id="z9d2c4"
-crackmapexec mssql <IP>
+netexec mssql <IP>
 ```
 
 With creds:
 
 ```bash id="q1f8n6"
-crackmapexec mssql <IP> -u user -p pass -d DOMAIN
+netexec mssql <IP> -u user -p pass -d DOMAIN
 ```
 
 ---
@@ -199,8 +199,8 @@ EXECUTE AS LOGIN = 'sa';
 Test creds on:
 
 ```bash id="q7x2l4"
-crackmapexec smb <IP> -u user -p pass
-crackmapexec winrm <IP> -u user -p pass
+netexec smb <IP> -u user -p pass
+netexec winrm <IP> -u user -p pass
 ```
 
 ---

@@ -160,7 +160,7 @@ SMTP users → feed into:
 ## 10. Password Spraying
 
 ```bash id="t5m1c8"
-crackmapexec smb <IP> -u users.txt -p passwords.txt
+netexec smb <IP> -u users.txt -p passwords.txt
 ```
 
 ---

@@ -1,102 +1,34 @@
 # Red Brixen Offensive Security Field Guide
-A structured penetration testing system designed for OSCP+ preparation and real-world engagements.
 
-## Intended Audience
+A manual reference for penetration testers: practical procedures, copyable commands, result interpretation, evidence collection, remediation, and reporting.
 
-- OSCP candidates
-- aspiring penetration testers
-- security engineers building practical workflows
+The tester chooses and performs each task. Every guide must be usable independently of RB binaries, a database, a generated workspace, or an automated lab. Use your own notes, evidence folders, and preferred reporting tools.
 
-## Highlights
+## Start with the task
 
-- End-to-end attack workflows
-- Active Directory attack framework
-- Privilege escalation playbooks (Linux + Windows)
-- Pivoting strategies (Ligolo, tunnels)
-- Reporting templates
+- [Start here](00_START_HERE.md): choose a reference for the current task.
+- [Workflows](workflows/README.md): decision paths for enumeration, web, SMB, AD, escalation, and pivoting.
+- [Service enumeration](enumeration/README.md): service-specific reference material.
+- [Active Directory](active-directory/README.md): planning, reconnaissance, and current coverage status.
+- [Privilege escalation](privilege-escalation/README.md): Linux and Windows references.
+- [Pivoting](pivoting/README.md): SSH, ProxyChains, Chisel, and Ligolo.
+- [Command snippets](snippets/README.md): short examples linked to their prerequisites.
+- [Problem-solving references](hacker-mindset/README.md): hypotheses, interpretation, and next steps.
+- [Finding template](exploited-vulns/_TEMPLATE/finding_template.md): document a finding manually.
+- [Exam reporting template](OSCP_NOTES/6%20-%20reporting/oscp-report-template.md): separate study/exam material; check current exam requirements.
 
-## Purpose
+## How to use a procedure
 
-This repository is a **high-speed operational system** for penetration testing.
+Confirm the scope and prerequisites, set the documented inputs, and run the command in the named shell and location. Compare the actual output with the expected result, interpret what it proves, and choose the next step. Record evidence and limitations as you work. Restore any changes and document remediation and retest results.
 
-It is optimized for:
-- OSCP+ exam execution
-- lab environments
-- real-world engagements
+A reference-reviewed command is not necessarily lab-validated. Check the verification status, tested versions, and limitations on each page. Older pages without a verification record remain unverified. The [reference-writing standard](docs/FIELD_GUIDE_STANDARD.md) defines what a complete guide should provide.
 
----
+## Optional tools
 
-## Core Philosophy
+[RB-OPS](tools/scripts/rb-ops/README.md) contains optional operator utilities for organizing engagement data. They are separate from the guide and are never prerequisites for its workflows or report templates. An individual utility can have its own runtime dependencies.
 
-- Enumeration is continuous
-- Credentials are king
-- Misconfigurations beat exploits
-- Simplicity beats cleverness
+## Project maintenance
 
----
+[Completion plan](PROJECT_EVALUATION_AND_COMPLETION_PLAN.md) · [Ticket queue](IMPLEMENTATION_QUEUE.md) · [Contributing](CONTRIBUTING.md)
 
-## Structure
-
-```
-.
-├── enumeration/
-├── privilege-escalation/
-│   ├── linux/
-│   └── windows/
-├── active-directory/
-├── pivoting/
-├── snippets/
-├── workflows/
-├── hacker-mindset/
-├── exploited_vulns/
-```
-
----
-
-## How To Use (Exam Mode)
-
-1. Start here:
-   → workflows/01_initial_enum.md
-
-2. Follow the workflow:
-   → web → smb → active-directory
-
-3. Use:
-   → snippets/ for commands  
-   → privilege-escalation/ for escalation  
-   → pivoting/ for internal access  
-
-4. If stuck:
-   → hacker-mindset/
-
----
-
-## Core Loop
-
-```
-Scan → Enum → Exploit → Shell → Privesc → Pivot → Repeat
-```
-
----
-
-## Priority Order
-
-1. Credentials
-2. Misconfigurations
-3. Known attack paths
-4. Exploits (last)
-
----
-
-## Warning
-
-Do NOT:
-- skip enumeration
-- tunnel on one idea
-- overcomplicate solutions
-
----
-
-## Goal
-
-Turn this repo into instinct under pressure
+Verification fixtures under `labs/` and tests are maintainer quality checks. They substantiate command claims; the pentester does not need to run them to use a guide. They do not automate an engagement.

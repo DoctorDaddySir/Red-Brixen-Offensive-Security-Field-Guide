@@ -166,8 +166,8 @@ grep -i "pass" -r /home 2>/dev/null
 Test SSH creds on:
 
 ```bash
-crackmapexec smb <IP> -u user -p pass
-crackmapexec winrm <IP> -u user -p pass
+netexec smb <IP> -u user -p pass
+netexec winrm <IP> -u user -p pass
 ```
 
 ---

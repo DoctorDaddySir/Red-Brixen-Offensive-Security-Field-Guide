@@ -25,8 +25,8 @@ bloodhound-python -u user -p pass -ns <DC_IP> -d domain.local -c All
 ## SMB Enum
 
 ```bash
-crackmapexec smb <IP> --users
-crackmapexec smb <IP> --shares
+netexec smb <IP> --users
+netexec smb <IP> --shares
 ```
 
 ---
