@@ -191,8 +191,8 @@ Use for:
 Test found creds on:
 
 ```bash
-crackmapexec smb <IP> -u user -p pass
-crackmapexec winrm <IP> -u user -p pass
+netexec smb <IP> -u user -p pass
+netexec winrm <IP> -u user -p pass
 ssh user@<IP>
 ```
 

@@ -72,7 +72,34 @@ uname -a
 
 ---
 
-## 9. Golden Rules
+## 9. Credential Reuse
+
+Check whether credentials found elsewhere on the network can be reused locally. Test any
+domain, database, or application credentials discovered during the engagement against local
+services first:
+```bash
+# Reuse discovered credentials
+ssh user@<IP>
+smbclient //<IP>/share -U 'DOMAIN\user%pass'
+```
+
+Look for local credential stores:
+
+```bash
+# SSH agents and keys
+ssh-add -l
+ls -la ~/.ssh/
+find / -name "id_rsa" -o -name "id_ed25519" 2>/dev/null
+
+# Application/env secrets
+find / -name ".env" 2>/dev/null
+```
+
+If local reuse fails, prioritize the remaining local privesc paths above.
+
+---
+
+## 10. Golden Rules
 
 - sudo -l first
 - SUID is high probability

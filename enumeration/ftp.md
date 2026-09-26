@@ -136,8 +136,8 @@ Trigger via:
 Test FTP creds on:
 
 ```bash id="d6v3c9"
-crackmapexec smb <IP> -u user -p pass
-crackmapexec winrm <IP> -u user -p pass
+netexec smb <IP> -u user -p pass
+netexec winrm <IP> -u user -p pass
 ```
 
 Also test:

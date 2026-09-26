@@ -7,7 +7,7 @@ This file provides a structured workflow for enumerating SMB services and extrac
 Core rules:
 
 * SMB is a primary foothold vector
-* Always try anonymous access first
+* Always try anonymous/guest access first
 * Shares often contain credentials
 * Always reuse credentials across services
 
@@ -28,18 +28,23 @@ nmap -p 139,445 -sV <IP>
 
 ---
 
-## 1. Anonymous Enumeration (FIRST STEP)
+## 1. Anonymous / Guest Enumeration (FIRST STEP)
 
 ```bash id="zmbx07"
 smbclient -L //<IP> -N
-```
-
-```bash id="p8z9q6"
 smbmap -H <IP>
+enum4linux -a <IP>
 ```
 
-```bash id="7p2g5i"
-enum4linux -a <IP>
+### Guest account check
+
+On many targets the guest account is enabled or anonymous binding succeeds with an empty password.
+Both are common initial footholds and frequent misconfigurations:
+
+```bash id="guest01"
+netexec smb <IP> --local-auth -u guest -p '' --shares
+# null-session alternative:
+smbclient -L //<IP> -U guest%
 ```
 
 Look for:
@@ -54,14 +59,8 @@ Look for:
 
 ```bash id="9o1k2r"
 smbclient -L //<IP> -U 'DOMAIN\user%pass'
-```
-
-```bash id="5p7r6x"
 smbmap -H <IP> -u user -p pass -d DOMAIN
-```
-
-```bash id="k1m8w2"
-crackmapexec smb <IP> -u user -p pass -d DOMAIN
+netexec smb <IP> -u user -p pass -d DOMAIN
 ```
 
 ---
@@ -149,7 +148,7 @@ If writable:
 Test any found creds:
 
 ```bash id="n8y2v4"
-crackmapexec smb <targets.txt> -u user -p pass -d DOMAIN
+netexec smb <targets.txt> -u user -p pass -d DOMAIN
 ```
 
 Also test:
@@ -161,22 +160,16 @@ Also test:
 
 ---
 
-## 8. CrackMapExec Deep Use
+## 8. NetExec Deep Use
 
-```bash id="r9k5j1"
-crackmapexec smb <IP> --shares
-```
+NetExec is the maintained community successor to CrackMapExec. Prefer `netexec`; `crackmapexec`
+is retained as a legacy alias where already installed.
 
-```bash id="q1p8t3"
-crackmapexec smb <IP> --users
-```
-
-```bash id="y7v2m6"
-crackmapexec smb <IP> --sessions
-```
-
-```bash id="f4x0n2"
-crackmapexec smb <IP> --local-auth
+```bash id="netx01"
+netexec smb <IP> --shares
+netexec smb <IP> --users
+netexec smb <IP> --sessions
+netexec smb <IP> --local-auth
 ```
 
 ---
@@ -270,7 +263,6 @@ Try:
 RESET:
 
 * re-check shares
-* download everything
 * search for creds again
 * re-test credentials
 * combine with LDAP
@@ -287,7 +279,6 @@ RESET:
 
 ## 18. Golden Rules
 
-* Always try anonymous first
-* Always download interesting files
-* Always search for credentials
-* Always reuse credentials
+* Always try anonymous/guest first
+* Always scope downloads and preserve evidence
+* Always reuse credentials across services
