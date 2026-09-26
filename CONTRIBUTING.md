@@ -6,6 +6,10 @@ The repository owner approves and merges pull requests. Contributors must not me
 
 For dependent work, wait for the prerequisite to merge, then branch from updated master. Independently reviewable tickets may proceed on separate branches. Do not mix unrelated fixes into the same PR.
 
+## Manual reference requirement
+
+All guides are manual reference material for the pentester. Follow the [field-guide standard](docs/FIELD_GUIDE_STANDARD.md): publish the underlying commands, prerequisites, expected outputs, interpretation, next steps, evidence, and cleanup. RB tools are optional; no guide or reporting workflow may depend on them. Verification fixtures are maintainer QA only.
+
 ## Documentation verification
 
 Check local links, heading/content agreement, fenced code blocks, and whitespace. Cite primary documentation for platform-dependent claims. State the tested environment and date; distinguish reference review from commands actually executed in a lab. Never claim an unperformed test passed.

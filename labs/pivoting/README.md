@@ -1,8 +1,10 @@
-# Verified SSH, SOCKS and ProxyChains commands
+# Maintainer QA: SSH, SOCKS and ProxyChains verification
+
+This page documents maintainer verification, not an assessment workflow. Pentesters use the [manual ProxyChains guide](../../pivoting/proxychains.md) and [pivoting workflow](../../workflows/07_pivoting_tunneling.md) independently; no fixture or RB tool is required.
 
 The [recorded run](ssh-socks-result.json) passed on Linux using OpenSSH 10.4p1, curl 8.21.0, and ProxyChains 4.17. The [executable lab](verify_ssh_socks.py) is the exact source of the test commands and assertions.
 
-## Copy and run the complete local lab
+## Maintainer: reproduce the verification run
 
 From the repository root, as an ordinary user on Debian/Kali Linux:
 
@@ -16,7 +18,7 @@ The temporary server disables StrictModes only for its private temporary authori
 
 A successful run prints JSON with seven checks: local forward, SOCKS5, ProxyChains proof response, stopped-proxy failure, live direct control, closed tunnel listeners, and cleanup. A failed assertion exits unsuccessfully and includes diagnostics. Temporary resources are removed even on ordinary exceptions; forced process termination can require manual cleanup.
 
-## Copyable operator commands
+## Maintainer comparison: manual command forms
 
 These use the same forwarding/request options exercised by the lab. Set the variables to your approved environment first. The local daemon setup and ephemeral credentials are handled automatically in the complete lab above.
 

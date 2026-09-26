@@ -19,3 +19,7 @@ Each ticket has its own branch and PR. The owner approves and merges. Status is 
 | [RB-012](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/13) | Add continuous validation and release acceptance gates | `ticket/rb-012` |
 
 Start with RB-001 and RB-002 content corrections. Prioritize RB-004 report confidentiality before using exports for clients. Define data contracts before RB-005/006/011 and test migrations before merging those changes. RB-012 provides the integration and release gate. The roadmap also includes broader domain expansion that must be decomposed into additional tickets before implementation.
+
+## Owner clarification: manual reference first
+
+[RB-015](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/22) establishes that every guide is usable manually, with standalone reporting templates. RB-004/005/006/011 are optional utility maintenance; they do not gate the guide release. [RB-013](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/17) covers Ligolo reference commands; [RB-014](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/18) covers maintainer verification evidence.

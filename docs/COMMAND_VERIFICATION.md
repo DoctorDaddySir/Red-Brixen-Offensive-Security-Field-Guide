@@ -1,6 +1,6 @@
 # Command verification standard
 
-Readers should be able to copy a command after setting its documented inputs and know exactly what was tested.
+Readers should be able to copy a command after setting its documented inputs and know exactly what was tested. The guide remains a manual reference: the tester runs and interprets each step. Lab scripts are maintainer QA, not a required reader workflow. See the [field-guide standard](FIELD_GUIDE_STANDARD.md).
 
 | Status | Evidence required | What it does not establish |
 | --- | --- | --- |

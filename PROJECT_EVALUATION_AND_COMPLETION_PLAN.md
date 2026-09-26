@@ -2,9 +2,11 @@
 
 Assessment date: 2026-09-23. Baseline: local commit `2cb801f`.
 
+Product direction clarified by the owner on 2026-09-26: all guides are manual reference material. RB utilities are optional. Historical findings below describe the original baseline; the implementation plan now separates guide work from optional utility work.
+
 ## Recommendation
 
-Develop Red Brixen into a maintained penetration testing field guide with an integrated evidence and reporting toolkit. Preserve its terminal-first approach and useful enumeration material. The first release should support a complete, reproducible engagement: scoping, testing, findings, evidence, remediation, cleanup, report delivery, and retesting.
+Develop Red Brixen into a maintained manual reference for penetration testers. Publish the underlying commands and the information needed to choose, execute, interpret, document, and clean up each task. The guide covers scoping, testing, findings, evidence, remediation, reporting, and retesting without requiring RB binaries, a database, a generated workspace, or automated execution. Keep RB utilities in a separate optional tools track.
 
 The current repository is a substantial working notebook and an early toolkit, but it is not yet a dependable, comprehensive professional reference. Correctness, reporting depth, and validation should come before adding more commands or building a graphical application.
 
@@ -40,7 +42,7 @@ Avoid a percentage-complete estimate: the project has no agreed definition of do
 
 ## 3. Concrete defects and release blockers
 
-Priorities below describe project delivery urgency, not CVSS vulnerability severity.
+Priorities below describe the original project delivery urgency, not CVSS vulnerability severity. RB-004/005/006/011 concern optional utilities; those utilities have their own acceptance gates and do not block release of a complete manual guide.
 
 | ID | Priority | Observed issue | Required outcome |
 | --- | --- | --- | --- |
@@ -100,7 +102,7 @@ Every specialization must be explicitly labeled supported, experimental, or plan
 | Credentials/data | Secret entry, protected storage, masking, restricted access, minimum evidence, rotation and retention/destruction records. | Synthetic secret tests across terminal output, reports, attachments, and exports. |
 | Reporting/closure | Business impact, reproducibility, root cause, actionable remediation, coverage limitations, cleanup attestation, retest outcomes, residual risk. | Complete reviewed example reports and a closed remediation cycle. |
 
-Maintain a machine-readable coverage matrix. Each test has an ID, domain, applicable assets/roles, reference version, procedure link, status, evidence IDs, and reason for omission. Engagement statuses must distinguish not applicable, not tested, blocked, passed, and failed. Never translate “not tested” into “secure.”
+Provide a coverage table the tester can fill out manually in their preferred notes or reporting system. A machine-readable copy may be maintained for editorial QA, but is not required to use the guide. Each test has an ID, domain, applicable assets/roles, reference version, procedure link, status, evidence IDs, and reason for omission. Engagement statuses must distinguish not applicable, not tested, blocked, passed, and failed. Never translate “not tested” into “secure.”
 
 ## 6. Standard for every procedure
 
@@ -119,11 +121,11 @@ Adopt one canonical procedure template and retrofit existing pages:
 
 Keep quick commands short and link them to this canonical explanation. Replace blanket rules such as “always” with conditions when outcomes depend on scope or system state. Mark old command syntax as unverified until checked against tool documentation and a pinned lab environment.
 
-## 7. Evidence and reporting architecture
+## 7. Standalone evidence and reporting references
 
-### Data contracts
+### Manual records and templates
 
-Evolve SQLite through numbered, transactional migrations with backups and tested restore. Reuse current data rather than starting a parallel notebook that drifts from RB-OPS.
+Define these fields in standalone Markdown templates and worked examples. Testers may use ordinary files, notes, or their existing reporting systems. No SQLite database, RB command, or generated workspace is required. Optional RB utilities may implement the same fields later; their migrations and data compatibility are separate tool-maintenance work.
 
 | Record | Minimum information |
 | --- | --- |
@@ -137,7 +139,7 @@ Evolve SQLite through numbered, transactional migrations with backups and tested
 | Retest | Finding, remediation version/date, test procedure, evidence, result, residual risk, tester, and review date. |
 | Change/cleanup | Asset, change made, original state, rollback action, verification evidence, outstanding items, and client acknowledgement where needed. |
 
-Separate protected credential material from reportable metadata. Choose an established encryption/key-storage approach with documented unlock and recovery behavior; do not invent cryptography or store an encryption key beside its ciphertext. Until protected storage is ready, explicitly restrict supported usage to synthetic/lab data.
+Separate protected credential material from reportable metadata. Use the engagement’s approved credential store and reference identifiers in notes rather than copying secret values into reports. The existing RB credential utility needs separate storage hardening; this does not constrain the tester’s choice of another appropriate store.
 
 Preserve original evidence and create separately identified redacted derivatives. Hashes support integrity checks; they do not by themselves prove authenticity. Do not include real engagement workspaces in the public repository or documentation build.
 
@@ -148,15 +150,15 @@ Preserve original evidence and create separately identified redacted derivatives
 - **Restricted appendix:** specifically selected sensitive artifacts with documented recipients and handling. Excluded from normal exports.
 - **Exam report:** independently maintained template following current official requirements, without assumptions copied into client reports.
 
-Generate Markdown first from structured data; add HTML/PDF and DOCX through reproducible templates once the content contract is stable. Include table of contents, stable finding anchors, readable figures, consistent numbering, classification, version/date, and a delivery manifest. Visually inspect rendered examples before declaring those formats supported.
+Provide manually editable Markdown report templates first, then equivalent document templates as needed. Optional exporters may populate them, but manual completion is the primary documented path. Include table of contents, stable finding anchors, readable figures, consistent numbering, classification, version/date, and a delivery manifest. Visually inspect rendered examples before declaring those formats supported.
 
-Support explicit draft and final modes. Drafts can expose visible incompleteness; final generation must fail on required missing fields, unresolved evidence, unreviewed findings, unfilled placeholders, or disallowed sensitive content. A human reviewer must approve the executive narrative and risk conclusions. Do not fabricate summaries from finding counts.
+Provide a manual draft-to-final review checklist. Before delivery, the tester resolves missing fields, broken evidence references, unreviewed findings, placeholders, and unintended sensitive content. Optional exporters can add automated checks, but cannot replace that review or become prerequisites. A human reviewer must approve the executive narrative and risk conclusions. Do not fabricate summaries from finding counts.
 
 ### Finding lifecycle
 
 Use draft → validated → reviewed → reported, followed by remediation and retest states. Preserve false-positive/rejected records and reasons. Retest outcomes include fixed, partially fixed, not fixed, and unable to retest; never infer resolution from a ticket closure alone.
 
-Support CVSS 3.1 data already recorded and add explicit CVSS 4.0 support with a maintained implementation and reference vectors. Preserve the original scoring version when migrating. Keep technical severity separate from business priority; not every observation needs an invented CVSS score.
+Explain versioned CVSS 3.1 and 4.0 scoring with worked examples, reference vectors, and links to maintained calculators. Record the chosen version and metric rationale. Optional RB scoring implementations must preserve existing records when migrating. Keep technical severity separate from business priority; not every observation needs an invented CVSS score.
 
 ## 8. Implementation backlog and sequence
 
@@ -166,24 +168,24 @@ Estimates are planning ranges in focused person-days, assuming one experienced m
 | --- | --- | --- | --- |
 | A — Correct the baseline | 3–5 days | Fix RB-001/002; triage RB-003; remove misleading cleanup guidance; correct entry-point paths and personal template values; label draft content. Start secret-free export controls. | No mislabeled duplicate core workflows; no unsupported placeholders presented as complete; synthetic secrets omitted from default client output. |
 | B — Define the engagement contract | 4–6 days | Agree v1 coverage, procedure/finding/evidence schemas, client/exam separation, scope/ROE/coverage templates, and data handling. Depends on baseline inventory. | A complete synthetic engagement can be described consistently from scope through retest; reviewer accepts schemas. |
-| C — Make RB-OPS dependable | 8–12 days | Shared Python package and CLI entry points; preserve current command aliases; explicit `--engagement` alongside tmux; migrations, private permissions, protected credentials, hidden input, error handling, input/path validation, backup/restore, and structured import/export. Depends on B. | Installation and migration work from a clean environment; synthetic fixtures prove isolation, lifecycle, recovery, and absence of unintended secret output. |
-| D — Finish core field content | 12–18 days | Complete supported AD/snippet pages; review network and OS procedures; expand web/API coverage; write cleanup, evidence, and retest procedures; consolidate duplicated OSCP notes through canonical links. Depends on B; can proceed alongside C. | Every supported v1 topic meets the procedure template and has a recorded lab verification and coverage mapping. |
-| E — Complete reporting | 6–9 days | Finding editing/review/retest, evidence linking, client/exam templates, draft/final validation, redaction, risk tables, and rendered exports. Depends on B/C and representative D procedures. | Two synthetic end-to-end reports pass technical and editorial review; final mode rejects incomplete fixtures; rendered pages are readable. |
-| F — Validate and release | 5–8 days | Integrated pilot engagements, documentation search/navigation, offline access, CI/release checks, dependency/tool version manifest, contribution rules, licenses/provenance, and release notes. Depends on C/D/E. | All v1 gates below pass; release includes reproducible setup and known limitations. |
+| C — Optional RB-OPS maintenance | 8–12 days | Shared Python package and CLI entry points; preserve current command aliases; explicit `--engagement` alongside tmux; migrations, private permissions, protected credentials, hidden input, error handling, input/path validation, backup/restore, and structured import/export. Depends on B. | Installation and migration work from a clean environment; synthetic fixtures prove isolation, lifecycle, recovery, and absence of unintended secret output. |
+| D — Finish core field content | 12–18 days | Complete supported AD/snippet pages; review network and OS procedures; expand web/API coverage; write cleanup, evidence, and retest procedures; consolidate duplicated OSCP notes through canonical links. Depends on B; independent of optional C. | Every supported v1 topic meets the procedure template and has a recorded lab verification and coverage mapping. |
+| E — Complete reporting | 6–9 days | Manually editable client/exam templates, worked findings, evidence references, severity rationale, draft/final review checklist, cleanup and retest examples. Depends on B and representative D procedures; no RB utility dependency. | Two manually completed synthetic reports pass technical/editorial review; a second tester can use the templates without RB utilities. |
+| F — Validate and release | 5–8 days | Integrated pilot engagements, documentation search/navigation, offline access, CI/release checks, dependency/tool version manifest, contribution rules, licenses/provenance, and release notes. Depends on D/E; optional utility C has a separate release gate. | All v1 gates below pass; release includes reproducible setup and known limitations. |
 
-Total core estimate: **38–58 focused person-days**, roughly 8–12 full-time weeks before scheduling contingency. Lab construction, licensing, reviewer availability, and broader specialty content can increase this substantially.
+The original combined guide-and-tool estimate was 38–58 focused person-days. Removing optional phase C leaves an indicative **30–46 person-days for the manual guide track**, with RB utility maintenance separately estimated at 8–12 days. Re-estimate the revised reporting work after the first manual pilot; these are planning ranges, not commitments.
 
 ### First ten work items
 
 - [ ] Correct the four mislabeled documents identified in RB-001/002.
 - [ ] Inventory and label all 13 placeholders; finish the AD starting map before expanding commands.
-- [ ] Add a regression fixture for default-report secret leakage and implement public/restricted output separation.
+- [ ] Document manual evidence handling and client/restricted report separation; fix optional exporter leakage separately under RB-004.
 - [ ] Replace blanket collection, log-clearing, and unrestricted reuse guidance with scope-aware procedures.
 - [ ] Create procedure, finding, evidence, coverage, and retest schemas plus one complete synthetic example.
 - [ ] Separate professional and exam report templates; remove identifying values and unsupported success claims.
-- [ ] Introduce the shared RB-OPS package and explicit engagement selection with compatibility aliases.
-- [ ] Migrate finding records to support remediation, evidence, impact, status, and history.
-- [ ] Build one vertical slice: authorized lab test → evidence → reviewed finding → report → remediation → retest.
+- [ ] Audit each supported guide for RB dependencies and replace any required wrapper with the underlying manual steps.
+- [ ] Provide standalone finding records covering remediation, evidence, impact, status, and history.
+- [ ] Have a tester manually perform one complete example: authorized test → evidence → reviewed finding → report → remediation → retest, without RB utilities.
 - [ ] Run a second-reader pilot and revise estimates before expanding all domains.
 
 Suggested responsibility split: maintainer owns architecture and releases; domain reviewer signs off procedures; report reviewer checks reproducibility, impact, and clarity. One person may implement multiple roles, but obtain an independent reader for the pilot and release examples.
@@ -199,7 +201,9 @@ Suggested responsibility split: maintainer owns architecture and releases; domai
 - Commands are checked in disposable labs for the stated environment. Syntax checks alone are insufficient.
 - External links are checked on a schedule with sensible handling of transient failures; internal link and metadata checks run on every change.
 
-### RB-OPS
+### Optional RB-OPS release gates
+
+These apply only to the optional tools, not to use or release of the manual guide.
 
 - Clean installation, help output, environment diagnostics, and supported Python/tmux versions are documented.
 - Tests cover two simultaneous engagements, path edge cases, repeated initialization, missing tools, interrupted writes, and report output collisions.
@@ -213,7 +217,7 @@ Suggested responsibility split: maintainer owns architecture and releases; domai
 
 Use two isolated fictional engagements: an internal Windows/AD/Linux environment with a pivot, and a web/API environment with multiple roles/tenants. Each includes confirmed findings, a rejected observation, a blocked test, a benign result, cleanup, remediation, and a retest.
 
-A second tester must be able to follow the guide, locate evidence, reproduce documented results, distinguish untested coverage, and understand remediation without asking the author to reconstruct missing steps. Final client reports contain no placeholders or unintended secrets. No critical release blocker remains open.
+Without RB binaries, a database, or fixture scripts, a second tester must be able to manually follow the guide, locate evidence, reproduce documented results, distinguish untested coverage, and understand remediation without asking the author to reconstruct missing steps. Final client reports contain no placeholders or unintended secrets. No critical manual-guide release blocker remains open. Optional tools retain their own release status.
 
 ### Ongoing maintenance
 
@@ -239,14 +243,14 @@ web/                         # application and API procedures
 reporting/                   # evidence, findings, risk, delivery, retest
 templates/                   # canonical schemas and report templates
 examples/                    # synthetic engagements and deliverables only
-labs/                        # environment manifests and verification records
-tools/                       # packaged RB-OPS and supported utilities
+labs/                        # maintainer QA fixtures and verification records
+tools/                       # optional RB-OPS and other operator utilities
 tests/                       # migrations, tools, fixtures, report validation
 docs/                        # contribution rules, architecture, support matrix
 OSCP_NOTES/                  # explicitly separate study/exam track
 ```
 
-A searchable static documentation site and offline bundle are appropriate once structure stabilizes. Keep Markdown as the source of truth. A web application, multi-user service, and automatic exploitation engine are not prerequisites for completing this resource.
+A searchable static documentation site and offline bundle are appropriate once structure stabilizes. Keep Markdown as the source of truth. Automating the assessment process is outside the guide’s purpose. The tester controls and performs the work; maintainer tests only verify the reference material.
 
 ## 11. Reference baseline
 
