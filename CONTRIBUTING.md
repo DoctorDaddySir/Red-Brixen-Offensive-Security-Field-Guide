@@ -17,3 +17,7 @@ Use synthetic data in temporary workspaces. Exercise changed behavior and import
 ## Release readiness
 
 Use the acceptance gates in [the completion plan](PROJECT_EVALUATION_AND_COMPLETION_PLAN.md). A merged content correction does not by itself establish lab validation or release readiness. Preserve unresolved validation work in the relevant issue or follow-up ticket.
+
+## Copyable commands
+
+Follow the [command verification standard](docs/COMMAND_VERIFICATION.md). Record actual runs and relevant failure cases before labeling examples verified. The [pivoting smoke lab](labs/pivoting/README.md) provides the first executable baseline; it does not validate other command families.
