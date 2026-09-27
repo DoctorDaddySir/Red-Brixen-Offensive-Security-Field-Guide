@@ -9,13 +9,15 @@ Requires an active tmux session; stores data in:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sqlite3
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
+from rb_finding_model import init_details, decode, save_details, read_details, detail_lines
 from rb_exports import add_export_options, client_draft, export_path, write_export
 
 DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
@@ -111,6 +113,7 @@ def init_db(conn: sqlite3.Connection) -> None:
         );
         """
     )
+    init_details(conn)
     conn.commit()
 
 
@@ -165,16 +168,17 @@ def interactive_add(_: argparse.Namespace) -> None:
         print("[*] Aborted. Finding not saved.")
         return
 
-    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    conn.execute(
-        """
-        INSERT INTO findings (title, description, host, cvss_vector, cvss_score, severity, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-        (title, description, host, vector_str, score, sev, now),
-    )
-    conn.commit()
-    print("[+] Finding saved.")
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO findings (title, description, host, cvss_vector, cvss_score, severity, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (title, description, host, vector_str, score, sev, now),
+        )
+        init_details(conn)
+    print("[+] Finding saved. Add supporting details with rb-findings details.")
 
 
 def list_findings(_: argparse.Namespace) -> None:
@@ -210,9 +214,23 @@ def export_markdown(args: argparse.Namespace) -> None:
             lines.append(f"- Affected Host / Scope Item: {r['host'] or '-'}")
             lines.append("- Description:")
             lines.append(r['description'])
+            lines.extend(detail_lines(conn, r['id']))
             lines.append("")
     write_export(out_path, "\n".join(lines), restricted=True)
     print(f"[+] Exported findings markdown: {out_path}")
+
+
+def finding_details(args: argparse.Namespace) -> None:
+    # Validate the complete input before opening/migrating the engagement database.
+    document = decode(Path(args.file).read_text(encoding="utf-8")) if args.file else None
+    conn = connect()
+    if not conn.execute("SELECT 1 FROM findings WHERE id=?", (args.finding_id,)).fetchone():
+        fail("Finding not found.")
+    if document is not None:
+        save_details(conn, args.finding_id, document)
+        print("[+] Private finding details saved. Review status does not authorize client export.")
+    else:
+        print(json.dumps(read_details(conn, args.finding_id), indent=2, ensure_ascii=False))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -222,6 +240,10 @@ def build_parser() -> argparse.ArgumentParser:
     add.set_defaults(func=interactive_add)
     ls = sub.add_parser("list", help="List findings")
     ls.set_defaults(func=list_findings)
+    detail = sub.add_parser("details", help="Show private detail JSON, or replace it from a reviewed local file")
+    detail.add_argument("finding_id", type=int)
+    detail.add_argument("--file", help="Complete versioned JSON detail document; replaces existing details")
+    detail.set_defaults(func=finding_details)
     exp = sub.add_parser("export", help="Export findings to markdown")
     add_export_options(exp)
     exp.set_defaults(func=export_markdown)

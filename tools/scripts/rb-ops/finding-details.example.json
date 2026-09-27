@@ -1,0 +1,27 @@
+{
+  "model_version": 1,
+  "prerequisites": "",
+  "reproduction": "",
+  "expected_result": "",
+  "observed_result": "",
+  "impact": "",
+  "remediation": "",
+  "limitations": "",
+  "severity_rationale": "",
+  "client_priority": "",
+  "evidence": [],
+  "review": {
+    "status": "draft",
+    "reviewer": "",
+    "reviewed_at": "",
+    "notes": ""
+  },
+  "retest": {
+    "status": "not_tested",
+    "tester": "",
+    "tested_at": "",
+    "method": "",
+    "result": "",
+    "evidence_ids": []
+  }
+}
