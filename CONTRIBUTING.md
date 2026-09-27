@@ -28,6 +28,8 @@ Follow the [command verification standard](docs/COMMAND_VERIFICATION.md). Record
 
 ## Maintainer navigation check
 
+For the complete local/CI check suite, install `requirements-dev.txt` in a Python 3.11–3.14 virtual environment and run `python tests/validate.py`. CI tests the 3.11 and 3.14 endpoints on Linux. This includes synthetic optional-tool regression tests, saved lab-record structure, local links and source syntax; it does not run privileged labs or validate all guide commands. See [verification coverage and release acceptance](docs/RELEASE_ACCEPTANCE.md) before proposing a release.
+
 Install `requirements-dev.txt` in your development environment, then run:
 
 ```bash
