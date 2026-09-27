@@ -16,6 +16,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from rb_exports import add_export_options, client_draft, export_path, write_export
+
 DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
 AV = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
 AC = {"L": 0.77, "H": 0.44}
@@ -190,8 +192,11 @@ def list_findings(_: argparse.Namespace) -> None:
 def export_markdown(args: argparse.Namespace) -> None:
     session, engagement_dir, _ = engagement_context()
     conn = connect()
-    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "findings.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path = export_path(args, engagement_dir, "findings")
+    if not args.restricted:
+        write_export(out_path, client_draft(conn, "findings"), restricted=False)
+        print("[+] Client draft exported; review and complete before delivery.")
+        return
     rows = conn.execute("SELECT * FROM findings ORDER BY cvss_score DESC, id ASC").fetchall()
     lines = [f"# Findings - {session}", ""]
     if not rows:
@@ -206,7 +211,7 @@ def export_markdown(args: argparse.Namespace) -> None:
             lines.append("- Description:")
             lines.append(r['description'])
             lines.append("")
-    out_path.write_text("\n".join(lines), encoding="utf-8")
+    write_export(out_path, "\n".join(lines), restricted=True)
     print(f"[+] Exported findings markdown: {out_path}")
 
 
@@ -218,7 +223,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls = sub.add_parser("list", help="List findings")
     ls.set_defaults(func=list_findings)
     exp = sub.add_parser("export", help="Export findings to markdown")
-    exp.add_argument("--output", default="")
+    add_export_options(exp)
     exp.set_defaults(func=export_markdown)
     return p
 
@@ -230,4 +235,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, OSError, sqlite3.Error):
+        fail("Export or database operation failed; check data, output path and permissions.")

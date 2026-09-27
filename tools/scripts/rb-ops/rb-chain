@@ -16,6 +16,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from rb_exports import add_export_options, client_draft, export_path, write_export
+
 DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
 
 
@@ -139,8 +141,11 @@ def update_step(args: argparse.Namespace) -> None:
 def export_markdown(args: argparse.Namespace) -> None:
     session, engagement_dir, _ = engagement_context()
     conn = connect()
-    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "attack_chain.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path = export_path(args, engagement_dir, "attack_chain")
+    if not args.restricted:
+        write_export(out_path, client_draft(conn, "attack_chain"), restricted=False)
+        print("[+] Client draft exported; review and complete before delivery.")
+        return
     rows = conn.execute("SELECT * FROM exploit_chain_steps ORDER BY step_order, id").fetchall()
     lines = [f"# Attack Chain - {session}", ""]
     if not rows:
@@ -160,7 +165,7 @@ def export_markdown(args: argparse.Namespace) -> None:
             if r['notes']:
                 lines.append(f"- Notes: {r['notes']}")
             lines.append("")
-    out_path.write_text("\n".join(lines), encoding="utf-8")
+    write_export(out_path, "\n".join(lines), restricted=True)
     print(f"[+] Exported attack chain markdown: {out_path}")
 
 
@@ -195,7 +200,7 @@ def build_parser() -> argparse.ArgumentParser:
     upd.set_defaults(func=update_step)
 
     exp = sub.add_parser("export", help="Export chain to markdown")
-    exp.add_argument("--output", default="")
+    add_export_options(exp)
     exp.set_defaults(func=export_markdown)
     return p
 
@@ -207,4 +212,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, OSError, sqlite3.Error):
+        fail("Export or database operation failed; check data, output path and permissions.")
