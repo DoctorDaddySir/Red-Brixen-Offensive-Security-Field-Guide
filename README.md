@@ -21,6 +21,12 @@ The completed ticket work includes RB-000–005, RB-007–010 and RB-013–015. 
 
 See the [verification coverage and release gates](docs/RELEASE_ACCEPTANCE.md) for evidence, unresolved acceptance work and the distinction between guide and utility releases.
 
+### Latest verification
+
+The [RB-012 CI run on 2026-09-27](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/actions/runs/36325696911) passed on Python 3.11 and 3.14 at commit `07a2c82`. A fresh local run also passed all 30 tests, 266 rendered local Markdown destinations, structural checks for both saved lab records, and parsing of 17 Python and 7 Bash sources. These checks did not rerun the labs or validate every guide procedure.
+
+Next steps are owner review of [RB-012 / PR #30](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/pull/30), the remaining manual-guide release evidence listed above, and optional utility work on [RB-006 credential protection](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/7) and [RB-011 engagement lifecycle support](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/12).
+
 ## Start with the task
 
 - [Start here](00_START_HERE.md): choose a reference for the current task.
