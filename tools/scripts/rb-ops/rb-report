@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from rb_exports import add_export_options, client_draft, export_path, write_export
+
 DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
 
 
@@ -56,14 +58,17 @@ def table_exists(conn: sqlite3.Connection, name: str) -> bool:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate Red Brixen markdown engagement report.")
-    parser.add_argument("--output", default="")
+    add_export_options(parser)
     args = parser.parse_args()
 
     session, engagement_dir, _ = engagement_context()
     conn = connect()
 
-    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "engagement_report.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path = export_path(args, engagement_dir, "engagement_report")
+    if not args.restricted:
+        write_export(out_path, client_draft(conn, "engagement_report"), restricted=False)
+        print("[+] Client draft exported; review and complete before delivery.")
+        return
 
     lines = [f"# Red Brixen Security - Engagement Report: {session}", ""]
 
@@ -163,9 +168,12 @@ def main() -> None:
     lines.extend(["## Evidence and Artifacts", "", "Reference screenshots, logs, loot, and proof artifacts here.", ""])
     lines.extend(["## Cleanup / Client Notes", "", "Document cleanup actions, validation notes, and client-facing caveats here.", ""])
 
-    out_path.write_text("\n".join(lines), encoding="utf-8")
+    write_export(out_path, "\n".join(lines), restricted=True)
     print(f"[+] Generated report: {out_path}")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, OSError, sqlite3.Error):
+        fail("Export or database operation failed; check data, output path and permissions.")

@@ -16,6 +16,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from rb_exports import add_export_options, client_draft, export_path, write_export
+
 DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
 
 
@@ -146,8 +148,11 @@ def validate_credential(args: argparse.Namespace) -> None:
 def export_markdown(args: argparse.Namespace) -> None:
     session, engagement_dir, _ = engagement_context()
     conn = connect()
-    out_path = Path(args.output) if args.output else engagement_dir / "07-reporting" / "credentials.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path = export_path(args, engagement_dir, "credentials")
+    if not args.restricted:
+        write_export(out_path, client_draft(conn, "credentials"), restricted=False)
+        print("[+] Client draft exported; review and complete before delivery.")
+        return
 
     creds = conn.execute("SELECT * FROM credentials ORDER BY id").fetchall()
     vals = conn.execute("SELECT * FROM credential_validations ORDER BY credential_id, id").fetchall()
@@ -176,7 +181,7 @@ def export_markdown(args: argparse.Namespace) -> None:
                     lines.append(f"  - {v['created_at']} | host={v['host'] or '-'} | service={v['service'] or '-'} | {v['notes'] or '-'}")
             lines.append("")
 
-    out_path.write_text("\n".join(lines), encoding="utf-8")
+    write_export(out_path, "\n".join(lines), restricted=True)
     print(f"[+] Exported credential markdown: {out_path}")
 
 
@@ -207,7 +212,7 @@ def build_parser() -> argparse.ArgumentParser:
     val.set_defaults(func=validate_credential)
 
     exp = sub.add_parser("export", help="Export credentials to markdown")
-    exp.add_argument("--output", default="")
+    add_export_options(exp)
     exp.set_defaults(func=export_markdown)
     return p
 
@@ -219,4 +224,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, OSError, sqlite3.Error):
+        fail("Export or database operation failed; check data, output path and permissions.")

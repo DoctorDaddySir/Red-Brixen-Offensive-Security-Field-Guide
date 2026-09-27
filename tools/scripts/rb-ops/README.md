@@ -28,7 +28,11 @@ This keeps credentials, findings, and exploit-chain data isolated per engagement
 
 ## Installation
 
+Run from this directory with Python 3 available. Keep the shared module beside the installed commands:
+
 ```bash
+mkdir -p ~/bin
+install -m 644 rb_exports.py ~/bin/rb_exports.py
 install -m 755 rb-start ~/bin/rb-start
 install -m 755 rb-host ~/bin/rb-host
 install -m 755 rb-web ~/bin/rb-web
@@ -87,6 +91,38 @@ The generated report is written by default to:
 
 ## Notes
 
-- Secrets are currently stored in plaintext in SQLite. That is acceptable for a first local operator workflow, but not the final state.
+- Secrets are currently stored in plaintext in SQLite; credential storage protections are tracked separately in RB-006.
 - `rb-findings` uses CVSS v3.1 base metrics to calculate a score and severity.
-- `rb-report` assembles findings, exploit-chain steps, credentials, and engagement notes into one markdown report.
+- `rb-report` generates a client draft with record references; operator prose is available only in explicitly restricted exports.
+
+
+## Client drafts and restricted appendices
+
+The four export commands (`rb-report`, `rb-creds export`, `rb-chain export`, `rb-findings export`) default to a **manual client draft**. Existing database text has no reviewed/public classification. Defaults therefore include only record IDs, validated numeric finding scores and recorded credential-validation status, plus placeholders for your reviewed prose. Names, assets, descriptions, vectors, commands, outcomes, sources, notes, timestamps and attachment references are omitted, including the engagement/session name. This avoids guessing whether arbitrary text or an embedded image contains a secret. The database is unchanged.
+
+Fill in the draft using the [standalone finding template](../../../exploited-vulns/_TEMPLATE/finding_template.md), review the actual results and add separately reviewed/redacted evidence. A recorded validation flag is an operator assertion, not a fresh authentication test. A stored score is not revalidated against its vector by the exporter. No export copies attachment files or sanitizes their contents. The guide and templates remain usable without RB tools.
+
+When operator detail is necessary, explicitly select a restricted appendix:
+
+```bash
+rb-report --restricted
+rb-creds export --restricted
+rb-chain export --restricted
+rb-findings export --restricted
+```
+
+Default restricted filenames end in `.restricted.md` (for example `engagement_report.restricted.md`) and carry a restricted-data banner. `--output` remains supported; restricted exports require that suffix, while client drafts reject it. Restricted output includes the legacy free text and raw secrets, and the combined report includes scope/engagement notes. Treat embedded links and images as private too; render only in an appropriately controlled environment and distribute the appendix separately under agreed handling.
+
+All newly written export files use POSIX owner-read/write permissions (0600), including replacements, and are replaced atomically. Symbolic-link output destinations are rejected. Protect the parent directory and backups too; file permissions do not encrypt content. Export failures preserve an existing destination when replacement has not occurred.
+
+### Upgrade and verification
+
+Reinstall all four scripts **and** `rb_exports.py` together. Existing default output names and database schemas remain unchanged. Earlier exports are not retroactively scrubbed: review or regenerate them before delivery. To recover the former detailed output, use `--restricted`; do not downgrade to restore unsafe defaults. If reverting code is necessary, keep export use suspended until the safe version is restored. Existing add/list/update/validate operations retain their behavior and are local operator views, not client exports.
+
+Maintainer checks use synthetic SQLite data and mocked engagement resolution (no live client system):
+
+```bash
+python3 -m unittest discover -s tests -p 'test_rb_exports.py'
+```
+
+Run that command from the repository root. Tests exercise each exporter, unknown secrets in every text field, embedded attachment markup, private files, restricted detail, filename separation, permissions, malformed metadata, failure cleanup and copied/symlinked installation imports. POSIX/Linux behavior is tested; Windows ACL behavior and real tmux integration are not validated by this suite.
