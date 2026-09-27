@@ -2,7 +2,9 @@
 
 ## Purpose
 
-Provide structured attack execution paths
+Provide manual references for tester-selected tasks. RB binaries are optional.
+
+Start with the [scope, evidence and cleanup checklist](../methodology/scope-and-cleanup.md).
 
 ---
 
@@ -22,7 +24,7 @@ Provide structured attack execution paths
 
 ## Usage
 
-Follow in order unless a clear pivot is needed
+Select the reference that answers the current assessment question. The numbering is a navigation aid, not a required sequence.
 
 ---
 
