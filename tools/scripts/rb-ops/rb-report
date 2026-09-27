@@ -15,6 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from rb_finding_model import detail_lines
 from rb_exports import add_export_options, client_draft, export_path, write_export
 
 DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
@@ -102,8 +103,7 @@ def main() -> None:
             lines.append(f"- Affected Host / Scope Item: {f['host'] or '-'}")
             lines.append("- Description:")
             lines.append(f["description"])
-            lines.append("- Recommendation:")
-            lines.append("Add remediation guidance here.")
+            lines.extend(detail_lines(conn, f["id"]))
             lines.append("")
     else:
         lines.append("No findings recorded.")

@@ -33,6 +33,7 @@ Run from this directory with Python 3 available. Keep the shared module beside t
 ```bash
 mkdir -p ~/bin
 install -m 644 rb_exports.py ~/bin/rb_exports.py
+install -m 644 rb_finding_model.py ~/bin/rb_finding_model.py
 install -m 755 rb-start ~/bin/rb-start
 install -m 755 rb-host ~/bin/rb-host
 install -m 755 rb-web ~/bin/rb-web
@@ -117,7 +118,7 @@ All newly written export files use POSIX owner-read/write permissions (0600), in
 
 ### Upgrade and verification
 
-Reinstall all four scripts **and** `rb_exports.py` together. Existing default output names and database schemas remain unchanged. Earlier exports are not retroactively scrubbed: review or regenerate them before delivery. To recover the former detailed output, use `--restricted`; do not downgrade to restore unsafe defaults. If reverting code is necessary, keep export use suspended until the safe version is restored. Existing add/list/update/validate operations retain their behavior and are local operator views, not client exports.
+Reinstall all four scripts **and** `rb_exports.py` and `rb_finding_model.py` together. Existing default output names and database schemas remain unchanged. Earlier exports are not retroactively scrubbed: review or regenerate them before delivery. To recover the former detailed output, use `--restricted`; do not downgrade to restore unsafe defaults. If reverting code is necessary, keep export use suspended until the safe version is restored. Existing add/list/update/validate operations retain their behavior and are local operator views, not client exports.
 
 Maintainer checks use synthetic SQLite data and mocked engagement resolution (no live client system):
 
@@ -126,3 +127,33 @@ python3 -m unittest discover -s tests -p 'test_rb_exports.py'
 ```
 
 Run that command from the repository root. Tests exercise each exporter, unknown secrets in every text field, embedded attachment markup, private files, restricted detail, filename separation, permissions, malformed metadata, failure cleanup and copied/symlinked installation imports. POSIX/Linux behavior is tested; Windows ACL behavior and real tmux integration are not validated by this suite.
+
+
+## Complete finding details (model version 1)
+
+The optional findings tool can retain prerequisites, reproduction, expected/observed behavior, impact, remediation, limitations, scoring rationale, client priority, evidence references, review and retest records. These remain private operator data. A `reviewed` label records your review; it does not release any text into a default client export.
+
+Start with [the editable JSON example](finding-details.example.json). Save a protected working copy in your own notes directory and fill in the actual observations. Inside the selected tmux engagement, obtain the finding ID from `rb-findings list`, then run in Bash:
+
+```bash
+read -r -p 'Existing finding ID: ' FINDING_ID
+read -r -p 'Path to complete private finding-detail JSON: ' DETAIL_FILE
+rb-findings details "$FINDING_ID" --file "$DETAIL_FILE"
+rb-findings details "$FINDING_ID"
+```
+
+Expected: a save confirmation, followed by the stored JSON in the terminal. Treat the display and source file as private; they can contain secrets. The command replaces the **whole detail document**, not individual fields. Preserve the previous copy if you need a history; event history and wider editing remain RB-011. Invalid documents and unknown finding IDs are rejected. Use `rb-findings export --restricted` or `rb-report --restricted` to include the actual detail in a restricted appendix. Default client drafts remain unchanged.
+
+The top-level `model_version` must be integer `1`; unknown versions, duplicate JSON keys, missing/unknown fields and incorrect types fail validation. Empty draft fields mean “not recorded,” not an inferred success. Review status is `draft` or `reviewed`; reviewed records require a reviewer and a timezone-qualified timestamp.
+
+Evidence is a list of objects containing `id`, `path`, `caption`, `captured_at`, `sha256`, and `redaction_status`. IDs must be unique; the path/reference is required. Timestamps, when recorded, require a time zone. An optional SHA-256 is 64 hexadecimal characters. Redaction status is `unreviewed`, `redacted`, or `no_redaction_needed`. References and hashes are operator supplied: these commands do not open attachments, verify their existence, compute digests, sanitize images or prove redaction.
+
+Retest status is `not_tested`, `resolved`, `partial`, `unresolved`, or `unable_to_retest`. A recorded decision needs tester, timestamp and result/reason. Executed retests additionally require a method and `evidence_ids` referencing entries in the evidence list. This checks completeness of the record, not whether the conclusion is correct. Keep demonstrated impact separate from hypotheses and client priority separate from technical severity.
+
+### Migration and recovery
+
+Before upgrading, stop all writers and preserve a protected, consistent backup of the engagement database and any SQLite journal/WAL state using your normal SQLite backup procedure. Keep it under the same restricted handling as credentials. Installing this version does not itself alter a database. Opening `rb-findings` creates the companion `finding_details` table and backfills version-1 empty drafts atomically; repeated initialization preserves existing details. Original `findings` columns, IDs and values are unchanged. Newly saved findings receive an empty draft.
+
+`rb-report` reads legacy databases without migrating them and displays “Not recorded” for absent details. An unsupported or malformed stored detail document fails restricted rendering instead of silently discarding fields. Default client exports never read these private documents. No destructive schema downgrade is needed: reverting the tool leaves the companion table intact but older restricted exporters cannot show its fields. Retain the database and JSON source copies; restore the full consistent backup only when intentionally rolling back data, since restoration discards later work.
+
+Verification: synthetic legacy/new SQLite records, repeated/failed backfill, interactive add, JSON save/show, rejected malformed documents and unknown IDs, real-content restricted rendering, and default export isolation are exercised by `tests/test_finding_model.py`. Run `python3 -m unittest discover -s tests` from the repository root. Engagement resolution is mocked; live tmux, production backups and external evidence artifacts are not validated by these tests.

@@ -157,6 +157,7 @@ class ExportTests(unittest.TestCase):
         install = self.root / 'bin'
         install.mkdir()
         shutil.copy(TOOLS / 'rb_exports.py', install)
+        shutil.copy(TOOLS / 'rb_finding_model.py', install)
         for name in self.modules:
             shutil.copy(TOOLS / name, install)
             for script in (install / name, self.root / name):
