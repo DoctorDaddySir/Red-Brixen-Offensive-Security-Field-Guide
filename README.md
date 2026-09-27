@@ -15,6 +15,7 @@ The tester chooses and performs each task. Every guide must be usable independen
 - [Command snippets](snippets/README.md): short examples linked to their prerequisites.
 - [Problem-solving references](hacker-mindset/README.md): hypotheses, interpretation, and next steps.
 - [Finding template](exploited-vulns/_TEMPLATE/finding_template.md): document a finding manually.
+- [Manual reporting hub](reporting/README.md): professional client reports, evidence handling and separate exam material.
 - [Exam reporting template](OSCP_NOTES/6%20-%20reporting/oscp-report-template.md): separate study/exam material; check current exam requirements.
 
 ## How to use a procedure

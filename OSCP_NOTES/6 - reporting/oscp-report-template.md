@@ -1,236 +1,87 @@
-# OffSec Certified Professional (OSCP) Exam Report
+# OSCP exam report worksheet
 
-**Student:** [student@youremailaddress.com](mailto:perry.t.shelton@gmail.com)
-**OSID:** XXXXX
+Exam preparation material, separate from the [professional client report](../../reporting/client-report-template.md). This is an unofficial editable outline, not a completed report or a guarantee of exam compliance. No RB tool is required. Replace bracketed instructions with your own observed results; remove unused entries without inventing outcomes.
 
----
+**Student name / email:** [your details]
 
-# 1. Introduction
+**OSID:** [your assigned ID]
 
-This report documents the penetration testing activities conducted during the OffSec Certified Professional (OSCP) exam. The objective is to demonstrate a methodical approach to identifying and exploiting vulnerabilities within the target environment.
+**Exam dates / time zone:** [actual dates]
 
----
+**Report version:** [version]
 
-# 2. Objective
+## Current official requirements
 
-Perform an internal penetration test against the provided exam network. Identify vulnerabilities, exploit them, and document the process in a clear and reproducible manner.
+Reference check: 2026-09-27 UTC. Recheck the [OffSec exam guide](https://help.offsec.com/hc/en-us/articles/360040165632-OSCP-Exam-Guide) and [reporting requirements](https://help.offsec.com/hc/en-us/articles/360046787731-OSCP-Reporting-Requirements) before an attempt; the control panel and current official instructions govern. OffSec supplies recommended Word and LibreOffice templates on the reporting-requirements page.
 
----
+The checked guide requires reproducible steps, commands and output. Proof must be captured from its original location using `cat` or `type` in an interactive target shell; screenshots must also show the target IP using the documented network command. Submit required proofs in the control panel before the exam ends. Modified exploits need their source URL, changes, explanation and applicable generation commands. Review current tool restrictions, including the prohibition on AI chatbot assistance.
 
-# 3. Requirements
+For submission, the checked guide specifies PDF inside an unencrypted `.7z`, only PDFs in the archive, a 200 MB maximum and upload within 24 hours after completion. Follow its exact case-sensitive filename pattern using your OSID; verify the upload MD5 and complete the final submission action. Recheck these rules rather than relying on remembered packaging commands. [Source: official exam guide](https://help.offsec.com/hc/en-us/articles/360040165632-OSCP-Exam-Guide).
 
-This report includes:
+## Objective and actual coverage
 
-* High-Level Summary
-* Methodology
-* Detailed findings per target
-* Screenshots and proof files
-* Step-by-step reproduction steps
+[Record the assigned objectives and tested targets. Describe the access actually demonstrated, any partial results and missing evidence. Do not prewrite a success claim or infer domain control from local administration.]
 
----
+| Target / IP | Assigned objective | Demonstrated result | Evidence reference | Uncompleted work |
+| --- | --- | --- | --- | --- |
+| [target] | [objective] | [actual result] | [screenshot/section] | [limitation] |
 
-# 4. High-Level Summary
+## Per-target record — repeat for each assigned target
 
-A penetration test was conducted against the internal lab environment. Multiple vulnerabilities were identified and successfully exploited, leading to administrative-level access on several systems.
+### Target and starting context
 
-The primary issues identified include:
+- Host / IP / environment: [actual target]
+- Starting access / identity: [actual state; distinguish supplied access from access you obtained]
+- Relevant versions and prerequisites: [observed evidence]
+- Objective and outcome: [actual result, including partial or unsuccessful]
 
-* Weak credentials
-* Misconfigured services
-* Outdated software
+### Enumeration and interpretation
 
----
+[Paste the commands actually run, shell/vantage point, relevant output and why the observations led to the selected test. Do not substitute a stock scan command for your evidence.]
 
-## 4.1 Recommendations
+### Initial access or tested boundary
 
-* Apply security patches regularly
-* Enforce strong password policies
-* Disable unnecessary services
-* Restrict anonymous access
+1. [Reproducible action, prerequisite and actual input.]
+2. [Observed output and interpretation.]
+3. [Result and evidence reference; distinguish failure from success.]
 
----
+[Include exploit source and any modifications according to the current official requirements. Record paths, parameters and dependencies required to reproduce your work.]
 
-# 5. Methodology
+### Privilege change, if demonstrated
 
-## 5.1 Information Gathering
+[Record before/after identity, exact actions and evidence. If not attempted or not achieved, state that and why; do not leave an assumed SYSTEM/root outcome.]
 
-* Identified target IP ranges
-* Performed host discovery
+### Proof and screenshots
 
-## 5.2 Service Enumeration
+| Required proof/objective | Target and identity | Capture / screenshot reference | Control-panel submission record |
+| --- | --- | --- | --- |
+| [as assigned] | [actual context] | [legible evidence] | [actual status/time] |
 
-* Conducted port scans (Nmap)
-* Identified running services and versions
+[Insert the required evidence from your attempt. Check that screenshots satisfy the official proof and target-IP requirements. A placeholder or typed claim is not proof.]
 
-## 5.3 Exploitation
+### Reproduction and limitations
 
-* Identified vulnerabilities
-* Developed and executed exploits
+[Confirm a technically competent reader can follow the sequence from the documented starting state. Identify retries, environmental dependencies and steps whose outcome could not be confirmed.]
 
-## 5.4 Privilege Escalation
+## AD sequence, when assigned
 
-* Enumerated system misconfigurations
-* Leveraged privilege escalation techniques
+| Sequence | Source identity / host | Action and destination | Observed privilege / result | Evidence |
+| --- | --- | --- | --- | --- |
+| [step] | [starting context] | [actual action] | [demonstrated result] | [reference] |
 
-## 5.5 Post Exploitation
+[Document the transitions actually performed, including the supplied starting context. Do not assume every transition or final objective succeeded.]
 
-* Retrieved proof files
-* Maintained access where necessary
+## Conclusion
 
----
+[Summarize only demonstrated results, linked to target sections. State incomplete objectives and evidence gaps honestly. Any recommendations should address the observed causes rather than a prefilled list of generic fixes.]
 
-# 6. Independent Challenges
+## Final manual review
 
----
+- [ ] Personal placeholders replaced with your own details; no template author's contact remains.
+- [ ] Every claimed result maps to reproducible steps and legible evidence.
+- [ ] Current official instructions and target-specific objectives checked.
+- [ ] All required screenshots, exploit details and console output are present.
+- [ ] Final PDF visually reviewed for clipping, missing images and unreadable text.
+- [ ] Package, naming, deadline and upload confirmation checked against current guidance.
 
-## 6.1 Target #1 – <IP ADDRESS>
-
-### 6.1.1 Vulnerability Summary
-
-**Description:**
-Explain the vulnerability.
-
-**Impact:**
-Explain what access was gained.
-
-**Severity:** Critical / High / Medium / Low
-
-**Fix:**
-Explain remediation steps.
-
----
-
-### 6.1.2 Enumeration
-
-```bash
-nmap -sC -sV -oA initial <IP>
-```
-
-**Findings:**
-
-* Port XX: Service
-* Port XX: Service
-
----
-
-### 6.1.3 Exploitation (Initial Access)
-
-**Steps:**
-
-1. Describe step
-2. Describe step
-
-```bash
-# Commands used
-```
-
----
-
-### 6.1.4 Privilege Escalation
-
-**Technique Used:**
-
-* Example: AlwaysInstallElevated
-
-```bash
-# Commands used
-```
-
----
-
-### 6.1.5 Proof
-
-**local.txt**
-
-```
-<value>
-```
-
-**proof.txt**
-
-```
-<value>
-```
-
-**Screenshots:**
-
-* Include terminal showing proof.txt and IP
-
----
-
-### 6.1.6 Steps to Reproduce
-
-1. Run initial scan:
-
-```bash
-nmap -sC -sV <IP>
-```
-
-2. Access service:
-
-```bash
-<command>
-```
-
-3. Exploit vulnerability:
-
-```bash
-<command>
-```
-
-4. Escalate privileges:
-
-```bash
-<command>
-```
-
----
-
-# 7. Active Directory Set
-
----
-
-## 7.1 <Machine Name> – <IP>
-
-### 7.1.1 Initial Access
-
-**Vulnerability:**
-
-* Description
-
-```bash
-# Commands
-```
-
----
-
-### 7.1.2 Privilege Escalation
-
-**Technique:**
-
-* Description
-
-```bash
-# Commands
-```
-
----
-
-### 7.1.3 Post Exploitation
-
-* Lateral movement
-* Credential harvesting
-
----
-
-## 7.2 <Next Machine>
-
-(Repeat structure for each machine)
-
----
-
-# 8. Conclusion
-
-The assessment demonstrated multiple critical vulnerabilities that allowed full compromise of the environment. Proper patching, credential management, and system hardening are recommended.
-
----
+Verification: official-source review and Markdown checks only. No exam target, actual submission, archive command or PDF export was exercised for this template update.
