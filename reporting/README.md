@@ -5,6 +5,7 @@ Choose the document for the intended recipient. These are editable references; n
 | Need | Reference |
 | --- | --- |
 | Client engagement deliverable | [Professional report template](client-report-template.md) |
+| Severity and client priority | [Scoring reference](severity-scoring.md) |
 | One technical finding | [Finding template](../exploited-vulns/_TEMPLATE/finding_template.md) |
 | Exam preparation/report structure | [OSCP exam template](../OSCP_NOTES/6%20-%20reporting/oscp-report-template.md) |
 | Exam working notes | [Exam notes worksheet](../OSCP_NOTES/5%20-%20misc/reporting_templates.md) |

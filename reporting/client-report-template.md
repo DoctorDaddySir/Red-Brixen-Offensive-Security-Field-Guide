@@ -43,7 +43,7 @@ Record unreachable assets, denied access, missing prerequisites and stopped test
 | --- | --- | --- | --- | --- |
 | [F-001] | [evidence-backed title] | [assets] | [method/version and context] | [owner, priority] |
 
-[Reconcile totals with the detailed findings. Document the severity method and version; if using CVSS, include its vector, score and rationale for selected metrics. Separate technical severity from business priority and identify uncertain assumptions.]
+[Reconcile totals with the detailed findings. Use the [scoring reference](severity-scoring.md) to document the severity method and version; if using CVSS, include its vector, score and rationale for selected metrics. Separate technical severity from business priority and identify uncertain assumptions.]
 
 ## Detailed findings
 
