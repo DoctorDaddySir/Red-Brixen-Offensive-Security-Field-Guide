@@ -1,108 +1,59 @@
-# 03 – SMB Enumeration
+# 03 — SMB enumeration and minimal evidence
 
-## Goal
+Purpose: determine the tested identity's permitted share/file access. Set the scope, authentication-attempt limit and collection permissions using the [manual checklist](../methodology/scope-and-cleanup.md). Share visibility, file read, file write and code execution are distinct results.
 
-Find:
-- shares
-- users
-- credentials
-- writable locations
+## 1. Inspect approved shares
 
----
-
-## 1. Anonymous / Guest Access
-
-Try anonymous/guest access first. On many targets the guest account is enabled or anonymous
-binding succeeds with an empty password — both are common initial footholds.
+Operator Bash, with Samba smbclient installed:
 
 ```bash
-smbclient -L //<IP> -N
-smbmap -H <IP>
+read -r -p 'Approved SMB host: ' SMB_HOST
+read -r -p 'Approved identity, such as DOMAIN/user: ' SMB_ID
+smbclient --version
+smbclient -L "$SMB_HOST" -U "$SMB_ID"
 ```
 
-### Guest account check
+Enter the password at the tool prompt. Do not embed it in the command or shared transcript. If a null-session check is explicitly part of the test, use this separate unauthenticated request:
 
 ```bash
-netexec smb <IP> --local-auth -u guest -p '' --shares
-# null-session alternative:
-smbclient -L //<IP> -U guest%
+smbclient -L "$SMB_HOST" -U '%' -N
 ```
 
----
+An authenticated share listing does not prove a null session works. Record the actual identity and response; access denied is a result, not a reason to repeat attempts across accounts. A guest mapping is also different from a true anonymous session.
 
-## 2. Enum4linux
+## 2. Open one selected share
 
 ```bash
-enum4linux -a <IP>
+read -r -p 'Approved share name from the listing: ' SHARE
+smbclient "//$SMB_HOST/$SHARE" -U "$SMB_ID"
 ```
 
----
+At the smbclient prompt, start with:
 
-## 3. NetExec (preferred)
-
-NetExec is the maintained community successor to CrackMapExec. Prefer `netexec` for authenticated
-SMB enumeration; `crackmapexec` is retained as a legacy alias where already installed.
-
-```bash
-netexec smb <IP> --shares
-netexec smb <IP> --users
+```text
+pwd
+ls
 ```
 
----
+Review the listing before retrieving anything. Enter `cd` with the actual approved subdirectory if needed. Capture a listing or one agreed sample; do not default to recursive wildcard download.
 
-## 4. Access Shares
+For an agreed lab file named `approved-proof.txt`, these are smbclient console commands:
 
-```bash
-smbclient //<IP>/share -U user
+```text
+get approved-proof.txt evidence-copy.txt
+quit
 ```
 
----
+For a real assessment, substitute the exact approved remote/local filenames. Do not execute that example unless the remote file exists and collection is allowed. Record the source path, local artifact ID, timestamp and why that sample establishes the issue. Handle sensitive samples in the approved protected location.
 
-## 5. Download (scoped)
+## 3. Validate write access separately
 
-```bash
-recurse ON
-prompt OFF
-mget *
-```
+Only if write validation is authorized, select an unused filename in an agreed test directory and upload a benign marker containing no executable content. Confirm the file exists, then remove that exact marker and verify removal. Preserve proof of creation/removal. A listing marked writable is a hypothesis until the relevant access is tested; a successful write does not prove execution.
 
-Scope downloads to relevant shares and preserve a file manifest for evidence.
+## 4. Assess credentials and impact
 
----
+If a credential is discovered, reference it in protected notes and use the [credential-validation decision path](08_passwords_creds.md). Scope one destination/service and its attempt limit before testing it. Do not automatically spray a target list or try every protocol.
 
-## 6. Look For
+Report the identity, share/path, expected versus observed access, minimal evidence and effect on confidentiality/integrity. Recommend the relevant share/filesystem permission or credential-storage correction and retest the same access boundary after remediation. Restore test-created artifacts; preserve server logs.
 
-- passwords
-- config files
-- scripts
-- backups
-
----
-
-## 7. Writable Shares
-
-Upload payload:
-
-```bash
-put shell.exe
-```
-
----
-
-## 8. Credential Reuse
-
-Test any found creds across protocols:
-
-```bash
-netexec smb <targets.txt> -u user -p pass -d DOMAIN
-netexec winrm <targets.txt> -u user -p pass -d DOMAIN
-netexec rdp <targets.txt> -u user -p pass -d DOMAIN
-```
-
----
-
-## 9. Golden Rules
-
-- Always check anonymous/guest first
-- Always scope downloads and preserve evidence
-- SMB = high-value target
+Verification: commands are reference-reviewed against the [Samba manual](https://www.samba.org/samba/docs/current/man-html/smbclient.1.html); parser/help checks do not establish SMB server behavior. An authenticated Windows/Samba target execution record remains pending.
