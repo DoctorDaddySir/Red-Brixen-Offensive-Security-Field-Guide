@@ -31,11 +31,11 @@ Use these alongside technical workflows:
 
 ## Files
 
-- assumption_breaking.md
-- enumeration_mindset.md
-- hypothesis_loop.md
-- pattern_recognition.md
-- oscp_exam_mindset.md
+- [assumption_breaking.md](assumption_breaking.md)
+- [enumeration_mindset.md](enumeration_mindset.md)
+- [hypothesis_loop.md](hypothesis_loop.md)
+- [pattern_recognition.md](pattern_recognition.md)
+- [oscp_exam_mindset.md](oscp_exam_mindset.md)
 
 ---
 

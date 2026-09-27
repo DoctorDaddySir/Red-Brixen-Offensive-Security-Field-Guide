@@ -26,3 +26,7 @@
 ## Golden Rule
 
 Misconfigurations are more reliable than exploits
+
+## Detailed references
+
+Open the [Linux privilege escalation index](00_linux_privesc_index.md) for linked procedures and prerequisites.
