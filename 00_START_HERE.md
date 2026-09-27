@@ -16,4 +16,4 @@ Choose the task you need. These references are not an automated sequence: the te
 
 Before executing a command, confirm the applicable platform, tool version, required access, scope, execution location, inputs, and expected result. Read any verification limitations. A listed attack path is a hypothesis until the required conditions and result are established.
 
-Keep ordinary notes and evidence files in your preferred system. Record the host/account, timestamp, command, relevant output, interpretation, and next action. Complete a standalone finding template when warranted; no database or report generator is needed.
+Keep ordinary notes and evidence files in your preferred system. Record the host/account, timestamp, command, relevant output, interpretation, and next action. Use the [manual reporting references](reporting/README.md) and complete a standalone finding template when warranted; no database or report generator is needed.

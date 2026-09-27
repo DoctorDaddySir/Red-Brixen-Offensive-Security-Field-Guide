@@ -1,208 +1,37 @@
-# Reporting Templates (OSCP+)
+# Exam working notes worksheet
 
-## Purpose
+Use during preparation to record your own observations. This worksheet feeds the [exam report outline](../6%20-%20reporting/oscp-report-template.md); client engagements use the separate [professional template](../../reporting/client-report-template.md). Verify current exam rules before an attempt. No RB command or generated workspace is needed.
 
-These templates allow fast, consistent documentation during and after the exam.
+## One observation or test
 
-Write findings as you go.
+- Timestamp / time zone: [actual time]
+- Target / IP / identity / shell: [context]
+- Question and prerequisite: [what this test can establish]
+- Exact command or request: [what you actually ran]
+- Relevant output / artifact reference: [evidence]
+- Interpretation: [what the result establishes and what it does not]
+- Next decision: [continue, change hypothesis, stop, or record limitation]
 
----
+## Credential observation, if applicable
 
-# 1. Standard Finding Template
+- Protected credential reference: [identifier; keep reusable values out of general notes]
+- Source and identity: [observed context]
+- Use permitted by current scope/rules: [specific destination and method]
+- Actual validation result: [success, failure or not tested; supporting evidence]
+- Impact supported: [actual access; do not assume lateral movement]
 
-## Title
+## Privilege or identity transition
 
-[Short descriptive name]
+- Starting identity and target: [observed]
+- Misconfiguration or prerequisite: [evidence]
+- Actions and relevant output: [exact executed sequence]
+- Resulting identity and rights: [observed, or not achieved]
+- Proof/evidence reference: [artifact]
 
-## Target
+## Multi-host sequence
 
-* IP:
-* Hostname:
+| Step | Starting identity / host | Actual action | Destination / resulting identity | Evidence / unresolved prerequisite |
+| --- | --- | --- | --- | --- |
+| [step] | [context] | [command reference] | [observed result] | [reference] |
 
-## Description
-
-Brief explanation of the vulnerability.
-
-## Enumeration
-
-Commands used:
-
-```
-[commands]
-```
-
-Output summary:
-
-```
-[key output]
-```
-
-## Exploitation
-
-Steps:
-
-1. Step one
-2. Step two
-3. Step three
-
-Commands:
-
-```
-[commands]
-```
-
-## Proof
-
-```
-[proof.txt output]
-```
-
-## Impact
-
-* What access was gained
-* Why it matters
-
-## Remediation
-
-* Fix misconfiguration
-* Patch vulnerability
-* Restrict permissions
-
----
-
-# 2. Local Privilege Escalation
-
-## Title
-
-Local Privilege Escalation via [method]
-
-## Target
-
-* IP:
-* User:
-
-## Enumeration
-
-* Findings:
-* Misconfiguration:
-
-## Exploitation
-
-Steps:
-1.
-2.
-3.
-
-Commands:
-
-```
-[commands]
-```
-
-## Proof
-
-```
-whoami
-```
-
-## Impact
-
-* SYSTEM/root access obtained
-
-## Remediation
-
-* Fix permissions
-* Remove misconfiguration
-
----
-
-# 3. Credential Discovery
-
-## Title
-
-Credential Disclosure
-
-## Target
-
-* IP:
-
-## Source
-
-* File / service / registry / share
-
-## Details
-
-* Username:
-* Password:
-
-## Usage
-
-* Where credentials worked
-
-## Impact
-
-* Lateral movement possible
-
-## Remediation
-
-* Remove stored credentials
-* Secure config files
-
----
-
-# 4. AD Attack Chain
-
-## Title
-
-Active Directory Compromise Chain
-
-## Summary
-
-Brief overview of full chain.
-
-## Steps
-
-1. Initial access
-2. Enumeration
-3. Credential discovery
-4. Lateral movement
-5. Privilege escalation
-
-## Commands
-
-```
-[commands]
-```
-
-## Proof
-
-* Domain admin access evidence
-
-## Impact
-
-* Full domain compromise
-
-## Remediation
-
-* Fix each step in chain
-
----
-
-# 5. Quick Notes Section
-
-Use during exam:
-
-* Commands:
-* Creds:
-* Paths:
-* Observations:
-
----
-
-# 6. Reporting Reminders
-
-* Be concise
-* Show commands clearly
-* Show proof clearly
-* Ensure steps are reproducible
-* Avoid unnecessary theory
+A chain can end at a failed prerequisite. Do not prefill domain compromise or administrative access. Transfer confirmed results into the final report while preserving limitations. Follow the [exam template's official-source checklist](../6%20-%20reporting/oscp-report-template.md) for proof and submission requirements.
