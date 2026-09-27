@@ -24,3 +24,7 @@
 ## Golden Rule
 
 SeImpersonate = high priority
+
+## Detailed references
+
+Open the [Windows privilege escalation index](00_windows_privesc_index.md) for linked procedures and prerequisites.

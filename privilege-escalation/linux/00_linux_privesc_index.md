@@ -49,7 +49,7 @@ id | grep docker
 ## 1. SUDO MISCONFIG (TOP PRIORITY)
 
 File:
-→ sudo_misconfig.md
+[sudo_misconfig.md](sudo_misconfig.md)
 
 Command:
 ```bash
@@ -66,7 +66,7 @@ Look for:
 ## 2. SUID BINARIES (VERY HIGH)
 
 File:
-→ suid_sgid_binaries.md
+[suid_sgid_binaries.md](suid_sgid_binaries.md)
 
 ```bash
 find / -perm -4000 2>/dev/null
@@ -77,7 +77,7 @@ find / -perm -4000 2>/dev/null
 ## 3. CREDENTIALS / SSH KEYS
 
 File:
-→ ssh_keys_and_creds.md
+[ssh_keys_and_creds.md](ssh_keys_and_creds.md)
 
 ```bash
 find / -name "id_rsa" 2>/dev/null
@@ -89,7 +89,7 @@ cat ~/.bash_history
 ## 4. DOCKER / LXD GROUP
 
 File:
-→ docker_lxc_groups.md
+[docker_lxc_groups.md](docker_lxc_groups.md)
 
 ```bash
 id
@@ -102,7 +102,7 @@ lxc list
 ## 5. CRON JOBS
 
 File:
-→ cron_jobs.md
+[cron_jobs.md](cron_jobs.md)
 
 ```bash
 cat /etc/crontab
@@ -116,7 +116,7 @@ ls -la /etc/cron.*
 ## 6. WRITABLE FILES / PATH HIJACK
 
 File:
-→ writeable_paths_path_hijack.md
+[writable_paths_path_hijack.md](writable_paths_path_hijack.md)
 
 ```bash
 echo $PATH
@@ -128,7 +128,7 @@ find / -writable -type d 2>/dev/null
 ## 7. SYSTEMD SERVICES
 
 File:
-→ systemd_units.md
+[systemd_units.md](systemd_units.md)
 
 ```bash
 systemctl list-units --type=service
@@ -140,7 +140,7 @@ systemctl cat <service>
 ## 8. NFS NO_ROOT_SQUASH
 
 File:
-→ nfs_no_root_squash.md
+[nfs_no_root_squash.md](nfs_no_root_squash.md)
 
 ```bash
 showmount -e <IP>
@@ -153,7 +153,7 @@ showmount -e <IP>
 ## 9. CONFIG FILES / SECRETS
 
 File:
-→ config_secrets.md
+[config_secrets.md](config_secrets.md)
 
 ```bash
 grep -Ri "password" / 2>/dev/null
@@ -164,7 +164,7 @@ grep -Ri "password" / 2>/dev/null
 ## 10. CAPABILITIES
 
 File:
-→ capabilities.md
+[capabilities.md](capabilities.md)
 
 ```bash
 getcap -r / 2>/dev/null
@@ -175,7 +175,7 @@ getcap -r / 2>/dev/null
 ## 11. KERNEL EXPLOITS (LAST RESORT)
 
 File:
-→ kernel_exploits.md
+[kernel_exploits.md](kernel_exploits.md)
 
 ```bash
 uname -a
@@ -193,13 +193,14 @@ Check:
 - internal services
 
 Files:
-- web.md
-- smb.md
-- ftp.md
-- mssql.md
-- ldap.md
-- rpc.md
-- dns.md
+
+- [web.md](../../enumeration/web.md)
+- [smb.md](../../enumeration/smb.md)
+- [ftp.md](../../enumeration/ftp.md)
+- [mssql.md](../../enumeration/mssql.md)
+- [ad_enum.md](../../enumeration/ad_enum.md)
+- [rpc.md](../../enumeration/rpc.md)
+- [dns.md](../../enumeration/dns.md)
 
 ---
 

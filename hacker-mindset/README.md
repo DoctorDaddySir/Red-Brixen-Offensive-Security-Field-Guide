@@ -26,3 +26,11 @@ Improve decision-making under pressure
 ## Golden Rule
 
 Thinking is your most powerful tool
+
+## Detailed references
+
+- [Mindset index](00_mindset_index.md)
+- [When stuck](stuck.md)
+- [Service-analysis practice](practice_service_analysis.md)
+- [Exploit-hypothesis practice](practice_exploit_ideas.md)
+- [Reverse-engineering practice](practice_reverse_engineering.md)

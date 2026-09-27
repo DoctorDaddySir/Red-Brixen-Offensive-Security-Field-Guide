@@ -1,0 +1,2 @@
+# Maintainer Markdown navigation checks only; not required to use the field guide.
+markdown-it-py==4.2.0
