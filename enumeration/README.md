@@ -30,25 +30,25 @@ It is:
 
 ## Structure
 
-Each file represents a service or protocol:
+Each file represents a service or protocol. Active Directory enumeration ([ad_enum.md](ad_enum.md)) covers LDAP, Kerberos, and BloodHound collection — there is no standalone `ldap.md` here.
 
-- web.md
-- smb.md
-- ldap.md
-- rpc.md
-- dns.md
-- ftp.md
-- ssh.md
-- winrm.md
-- mssql.md
-- snmp.md
-- smtp.md
-- nfs.md
-- webdav.md
-- wordpress.md
-- drupal.md
-- jenkins.md
-- github.md
+- [web.md](web.md)
+- [smb.md](smb.md)
+- [ad_enum.md](ad_enum.md)
+- [rpc.md](rpc.md)
+- [dns.md](dns.md)
+- [ftp.md](ftp.md)
+- [ssh.md](ssh.md)
+- [winrm.md](winrm.md)
+- [mssql.md](mssql.md)
+- [snmp.md](snmp.md)
+- [smtp.md](smtp.md)
+- [nfs.md](nfs.md)
+- [webdav.md](webdav.md)
+- [wordpress.md](wordpress.md)
+- [drupal.md](drupal.md)
+- [jenkins.md](jenkins.md)
+- [github.md](github.md)
 
 ---
 

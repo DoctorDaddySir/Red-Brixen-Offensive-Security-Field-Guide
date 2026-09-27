@@ -25,3 +25,16 @@ Use the acceptance gates in [the completion plan](PROJECT_EVALUATION_AND_COMPLET
 ## Copyable commands
 
 Follow the [command verification standard](docs/COMMAND_VERIFICATION.md). Record actual runs and relevant failure cases before labeling examples verified. The [pivoting smoke lab](labs/pivoting/README.md) provides the first executable baseline; it does not validate other command families.
+
+## Maintainer navigation check
+
+Install `requirements-dev.txt` in your development environment, then run:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_internal_links.py'
+python3 tests/check_internal_links.py
+```
+
+The checker parses CommonMark links, reference links and images, decodes URL-encoded paths, and ignores fenced/inline code. It checks local file/directory destinations; it does not check external URLs, fragments, raw HTML links or plain text that is not a rendered link. Use `%20` or angle-wrapped destinations for filenames containing spaces. Review navigation in rendered Markdown as well; a malformed link may render as plain text.
+
+These are maintainer checks, not prerequisites for using the guide.

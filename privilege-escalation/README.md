@@ -8,10 +8,8 @@ Escalate privileges on compromised systems
 
 ## Structure
 
-```
-linux/
-windows/
-```
+- [Linux privilege escalation](linux/README.md)
+- [Windows privilege escalation](windows/README.md)
 
 ---
 

@@ -48,7 +48,7 @@ wmic service get name,displayname,pathname,startmode
 ## 1. TOKEN PRIVILEGES (TOP PRIORITY)
 
 File:
-→ token_privileges.md
+[token_privileges.md](token_privileges.md)
 
 ```cmd
 whoami /priv
@@ -63,7 +63,7 @@ Look for:
 ## 2. STORED CREDENTIALS
 
 File:
-→ stored_credentials.md
+[stored_credentials.md](stored_credentials.md)
 
 ```cmd
 cmdkey /list
@@ -79,7 +79,7 @@ Also check:
 ## 3. ALWAYSINSTALLELEVATED
 
 File:
-→ always_install_elevated.md
+[always_install_elevated.md](always_install_elevated.md)
 
 ```cmd
 reg query HKLM\Software\Policies\Microsoft\Windows\Installer
@@ -91,7 +91,7 @@ reg query HKCU\Software\Policies\Microsoft\Windows\Installer
 ## 4. WEAK SERVICE PERMISSIONS
 
 File:
-→ weak_service_permissions.md
+[weak_service_permissions.md](weak_service_permissions.md)
 
 ```cmd
 accesschk.exe -uwcqv "Users" *
@@ -102,7 +102,7 @@ accesschk.exe -uwcqv "Users" *
 ## 5. WRITABLE SERVICE FILES
 
 File:
-→ writable_service_files.md
+[writable_service_files.md](writable_service_files.md)
 
 ```cmd
 sc qc <service>
@@ -116,7 +116,7 @@ icacls <path>
 ## 6. UNQUOTED SERVICE PATHS
 
 File:
-→ unquoted_service_paths.md
+[unquoted_service_path.md](unquoted_service_path.md)
 
 ```cmd
 wmic service get name,displayname,pathname,startmode | findstr /i "Auto"
@@ -127,7 +127,7 @@ wmic service get name,displayname,pathname,startmode | findstr /i "Auto"
 ## 7. SCHEDULED TASKS
 
 File:
-→ scheduled_tasks.md
+[scheduled_tasks.md](scheduled_tasks.md)
 
 ```cmd
 schtasks /query /fo LIST /v
@@ -138,7 +138,7 @@ schtasks /query /fo LIST /v
 ## 8. REGISTRY AUTORUNS
 
 File:
-→ registry_autoruns.md
+[registry_autoruns.md](registry_autoruns.md)
 
 ```cmd
 reg query HKLM\Software\Microsoft\Windows\CurrentVersion\Run
@@ -149,7 +149,7 @@ reg query HKLM\Software\Microsoft\Windows\CurrentVersion\Run
 ## 9. INSECURE FILE PERMISSIONS
 
 File:
-→ insecure_file_permissions.md
+[insecure_file_permissions.md](insecure_file_permissions.md)
 
 ```cmd
 icacls <path>
@@ -162,7 +162,7 @@ icacls <path>
 ## 10. DLL HIJACKING
 
 File:
-→ dll_hijacking.md
+[dll_hijacking.md](dll_hijacking.md)
 
 Use:
 - Procmon
@@ -173,7 +173,7 @@ Use:
 ## 11. UAC BYPASS (ADMIN ONLY)
 
 File:
-→ uac_bypass.md
+[uac_bypass.md](uac_bypass.md)
 
 ```cmd
 whoami /groups
@@ -184,7 +184,7 @@ whoami /groups
 ## 12. KERNEL EXPLOITS (LAST RESORT)
 
 File:
-→ kernel_exploits.md
+[kernel_exploits.md](kernel_exploits.md)
 
 ```cmd
 systeminfo
