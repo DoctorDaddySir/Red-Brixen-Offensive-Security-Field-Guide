@@ -12,7 +12,7 @@ Secrets use the maintained library's [Fernet authenticated encryption](https://c
 
 ## Upgrade and migration
 
-Stop all RB-OPS writers and other SQLite clients for the engagement. Install all four Python commands, the four shared modules and the dependency together as described in [installation](README.md#installation). Keep the activated virtual environment on PATH when running the installed commands. Do not mix old and new command versions: old commands can reintroduce plaintext.
+Stop all RB-OPS writers and other SQLite clients for the engagement. Install all four Python commands, the four shared modules, the complete `rb_ops` package and the dependency together as described in [installation](README.md#installation). Keep the activated virtual environment on PATH when running the installed commands. Do not mix old and new command versions: old commands can reintroduce plaintext.
 
 For each engagement, inside its tmux session, in Bash:
 
@@ -36,7 +36,7 @@ These checks remove the synthetic marker from the current tested database/WAL fi
 
 ## Backup and recovery
 
-From the stopped engagement, using its matching external key:
+From the stopped engagement, using its matching external key (take the pre-upgrade backup with the installed RB-006 version before upgrading to RB-011):
 
 ```bash
 rb-creds backup --output ~/rb-private-backups/example-current.rbbackup
@@ -63,3 +63,5 @@ Run `python3 tests/validate.py` from the repository root after installing `requi
 On 2026-09-27, a separate isolated real tmux session also passed engagement discovery, external-key initialization, empty database initialization and encrypted backup/restore into a fresh engagement. Its temporary server used no user tmux configuration. That smoke check does not cover a complete populated tmux workflow; populated data and hidden entry are covered by the synthetic and PTY tests above.
 
 Tests use synthetic local data. Windows ACLs, network filesystems, hostile processes running as the operator, full production backup infrastructure and power-loss fault injection are not validated. Real external assessments and guide labs are not run by these tests. Review these limitations before adopting the optional tools for sensitive work.
+
+RB-011 adds explicit selection (`rb-creds --engagement NAME ...`) and generic schema migrations through the shared package. These migrations never decrypt or convert credential secrets. Credential conversion remains the explicit `migrate --backup` operation described above. See [lifecycle upgrade and recovery](LIFECYCLE.md#upgrade-and-recovery) before installing RB-011.

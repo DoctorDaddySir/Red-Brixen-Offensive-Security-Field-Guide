@@ -2,24 +2,24 @@
 """
 Red Brixen Security - rb-chain
 Engagement-local exploit chain tracker for RB-OPS.
-Requires an active tmux session; stores data in:
+Select --engagement NAME or use the active tmux session; stores data in:
   $PENTEST_BASE/<session>/.redbrixen/opskit.db
 """
 
 from __future__ import annotations
 
 import argparse
-import os
+import json
 import sqlite3
-import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
-from rb_private import connect_private
+from rb_ops import lifecycle
+from rb_ops.database import atomic
+from rb_ops.context import engagement_context, invocation, add_engagement_option
+from rb_ops.database import open_database, migrate as init_db
 from rb_exports import add_export_options, client_draft, export_path, write_export
 
-DEFAULT_BASE = os.path.expanduser("~/pentest/engagements")
 
 
 def fail(msg: str) -> None:
@@ -27,49 +27,8 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
-def engagement_context() -> tuple[str, Path, Path]:
-    if not os.environ.get("TMUX"):
-        fail("rb-chain must be run from inside an active tmux engagement session.")
-    try:
-        session = subprocess.check_output(["tmux", "display-message", "-p", "#S"], stderr=subprocess.DEVNULL, text=True).strip()
-    except Exception:
-        fail("Failed to determine tmux session name.")
-    if not session:
-        fail("Failed to determine tmux session name.")
-    base = Path(os.environ.get("PENTEST_BASE", DEFAULT_BASE)).expanduser()
-    engagement_dir = base / session
-    if not engagement_dir.is_dir():
-        fail(f"Engagement directory not found for tmux session '{session}': {engagement_dir}")
-    meta_dir = engagement_dir / ".redbrixen"
-    db_path = meta_dir / "opskit.db"
-    return session, engagement_dir, db_path
-
-
 def connect() -> sqlite3.Connection:
-    _, _, db_path = engagement_context()
-    conn = connect_private(db_path)
-    init_db(conn)
-    return conn
-
-
-def init_db(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS exploit_chain_steps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            step_order INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            tactic TEXT DEFAULT '',
-            host TEXT DEFAULT '',
-            command TEXT DEFAULT '',
-            outcome TEXT DEFAULT '',
-            evidence_path TEXT DEFAULT '',
-            notes TEXT DEFAULT '',
-            created_at TEXT NOT NULL
-        );
-        """
-    )
-    conn.commit()
+    return open_database(engagement_context()[2])
 
 
 def next_order(conn: sqlite3.Connection) -> int:
@@ -79,16 +38,11 @@ def next_order(conn: sqlite3.Connection) -> int:
 
 def add_step(args: argparse.Namespace) -> None:
     conn = connect()
-    step_order = args.order if args.order is not None else next_order(conn)
-    now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    conn.execute(
-        """
-        INSERT INTO exploit_chain_steps (step_order, title, tactic, host, command, outcome, evidence_path, notes, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (step_order, args.title, args.tactic, args.host, args.command, args.outcome, args.evidence, args.notes, now),
-    )
-    conn.commit()
+    with atomic(conn):
+        step_order = args.order if args.order is not None else next_order(conn)
+        lifecycle.create_record(conn, 'chain', dict(step_order=step_order, title=args.title,
+            tactic=args.tactic, host=args.host, command=args.command, outcome=args.outcome,
+            evidence_path=args.evidence, notes=args.notes))
     print(f"[+] Added chain step {step_order}.")
 
 
@@ -111,30 +65,16 @@ def list_steps(_: argparse.Namespace) -> None:
 
 
 def update_step(args: argparse.Namespace) -> None:
-    conn = connect()
-    row = conn.execute("SELECT * FROM exploit_chain_steps WHERE id = ?", (args.step_id,)).fetchone()
-    if not row:
-        fail(f"Step id {args.step_id} not found.")
-    fields = {
-        "step_order": args.order if args.order is not None else row["step_order"],
-        "title": args.title if args.title is not None else row["title"],
-        "tactic": args.tactic if args.tactic is not None else row["tactic"],
-        "host": args.host if args.host is not None else row["host"],
-        "command": args.command if args.command is not None else row["command"],
-        "outcome": args.outcome if args.outcome is not None else row["outcome"],
-        "evidence_path": args.evidence if args.evidence is not None else row["evidence_path"],
-        "notes": args.notes if args.notes is not None else row["notes"],
-    }
-    conn.execute(
-        """
-        UPDATE exploit_chain_steps
-        SET step_order = ?, title = ?, tactic = ?, host = ?, command = ?, outcome = ?, evidence_path = ?, notes = ?
-        WHERE id = ?
-        """,
-        (fields["step_order"], fields["title"], fields["tactic"], fields["host"], fields["command"], fields["outcome"], fields["evidence_path"], fields["notes"], args.step_id),
-    )
-    conn.commit()
+    fields = {key: value for key, value in {
+        'step_order': args.order, 'title': args.title, 'tactic': args.tactic, 'host': args.host,
+        'command': args.command, 'outcome': args.outcome, 'evidence_path': args.evidence,
+        'notes': args.notes}.items() if value is not None}
+    lifecycle.update_record(connect(), 'chain', args.step_id, fields)
     print(f"[+] Updated step {args.step_id}.")
+
+
+def show_history(args):
+    print(json.dumps(lifecycle.history(connect(), 'chain', args.step_id), indent=2, ensure_ascii=False))
 
 
 def export_markdown(args: argparse.Namespace) -> None:
@@ -170,6 +110,7 @@ def export_markdown(args: argparse.Namespace) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Red Brixen exploit chain tracker.")
+    add_engagement_option(p)
     sub = p.add_subparsers(dest="command", required=True)
 
     add = sub.add_parser("add", help="Add a chain step")
@@ -198,6 +139,10 @@ def build_parser() -> argparse.ArgumentParser:
     upd.add_argument("--notes")
     upd.set_defaults(func=update_step)
 
+    hist = sub.add_parser('history', help='Display private chain edit history')
+    hist.add_argument('step_id', type=int)
+    hist.set_defaults(func=show_history)
+
     exp = sub.add_parser("export", help="Export chain to markdown")
     add_export_options(exp)
     exp.set_defaults(func=export_markdown)
@@ -207,7 +152,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    args.func(args)
+    with invocation(args.engagement):
+        args.func(args)
 
 
 if __name__ == "__main__":

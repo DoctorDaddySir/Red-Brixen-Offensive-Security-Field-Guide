@@ -162,6 +162,7 @@ class ExportTests(unittest.TestCase):
         shutil.copy(TOOLS / 'rb_finding_model.py', install)
         shutil.copy(TOOLS / 'rb_private.py', install)
         shutil.copy(TOOLS / 'rb_credentials.py', install)
+        shutil.copytree(TOOLS / 'rb_ops', install / 'rb_ops', ignore=shutil.ignore_patterns('__pycache__'))
         for name in self.modules:
             shutil.copy(TOOLS / name, install)
             for script in (install / name, self.root / name):

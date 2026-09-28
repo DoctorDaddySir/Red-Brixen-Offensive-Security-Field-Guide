@@ -119,13 +119,9 @@ def read_details(conn, finding_id):
 
 
 def save_details(conn, finding_id, document):
-    validate(document)
-    if not conn.execute('SELECT 1 FROM findings WHERE id=?', (finding_id,)).fetchone():
-        raise ValueError('Finding not found.')
-    with conn:
-        conn.execute('''INSERT INTO finding_details (finding_id, document) VALUES (?, ?)
-            ON CONFLICT(finding_id) DO UPDATE SET document=excluded.document''',
-            (finding_id, json.dumps(document, ensure_ascii=False)))
+    # Local import avoids a cycle; all detail writes share atomic history handling.
+    from rb_ops.lifecycle import save_details as save_with_history
+    return save_with_history(conn, finding_id, document)
 
 
 def detail_lines(conn, finding_id):

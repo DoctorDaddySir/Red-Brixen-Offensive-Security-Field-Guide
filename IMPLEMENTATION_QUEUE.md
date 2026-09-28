@@ -2,7 +2,7 @@
 
 Each ticket has its own branch and PR. The owner approves and merges. Status is tracked in GitHub; this table records the initial queue, not completion.
 
-For the dated repository snapshot, see [README current status](README.md#current-status--2026-09-27). [Release acceptance](docs/RELEASE_ACCEPTANCE.md) tracks remaining guide and optional-tool gates; closed correction tickets do not establish a completed v1 release.
+For the dated repository snapshot, see [README current status](README.md#current-status--2026-09-28). [Release acceptance](docs/RELEASE_ACCEPTANCE.md) tracks remaining guide and optional-tool gates; closed correction tickets do not establish a completed v1 release.
 
 | Ticket | Scope | Branch |
 | --- | --- | --- |

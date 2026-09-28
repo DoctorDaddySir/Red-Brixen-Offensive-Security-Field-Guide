@@ -1,6 +1,6 @@
 # Verification coverage and release acceptance
 
-Status snapshot: 2026-09-27. This is the maintained acceptance checklist for the manual guide and optional tools. The [completion plan](../PROJECT_EVALUATION_AND_COMPLETION_PLAN.md) retains the historical baseline and broader roadmap. RB-012 introduces repeatable checks and gates; it does not declare a v1 release.
+Status snapshot: 2026-09-28. This is the maintained acceptance checklist for the manual guide and optional tools. The [completion plan](../PROJECT_EVALUATION_AND_COMPLETION_PLAN.md) retains the historical baseline and broader roadmap. RB-012 introduces repeatable checks and gates; it does not declare a v1 release.
 
 ## Checks on every pull request
 
@@ -10,6 +10,8 @@ Run `python tests/validate.py` after installing [requirements-dev.txt](../requir
 | --- | --- | --- |
 | Synthetic export tests | Default outputs exclude seeded private text and secrets; restricted exports are explicit; output permissions and write failures are covered | No real engagement data, tmux session or complete installation lifecycle is exercised |
 | Finding-model tests | Repeatable migration, rollback on failed backfill, validation, CLI updates and rendering preserve synthetic records | Not a full credential migration or multi-engagement lifecycle test |
+| Credential protections | Synthetic migration/recovery, wrong-key handling, private files, unsafe-path rejection and explicit secret disclosure checks; real-PTY no-echo entry | No forensic erasure, arbitrary free-text encryption, Windows ACL or production recovery validation |
+| Engagement and record lifecycle | Concurrent explicit selection, transactional schema adoption/upgrades, editable records/retests, private history and rollback on failed history insertion | History starts at upgrade and is not tamper-proof against the database owner; no network-filesystem/power-loss validation |
 | Internal Markdown links | Parsed local links/images resolve within the repository | No external URLs, fragments, raw HTML links, malformed text that never renders as a link, or editorial correctness check |
 | Saved lab records | Both registered records and their fixture sources exist; timestamps, tool metadata, assertions and limitations are present | Structural checks do not rerun a fixture, verify the truth of its assertions or prove it matches a changed command |
 | Python/Bash parsing | Repository Python sources, extensionless Python commands and Bash scripts parse | Does not execute embedded guide commands or prove runtime correctness |
@@ -46,7 +48,7 @@ None of the unchecked requirements above is implied complete by the merged corre
 
 ## Optional RB-OPS release gate — open
 
-RB-006 and RB-011 remain open in the 2026-09-27 snapshot. Their release gate is independent of the manual guide.
+RB-006 merged in [PR #31](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/pull/31). RB-011 is implemented on this branch pending owner review. Their implementation evidence is distinct from the broader optional-tool release gate below, which remains independent of the manual guide. See [credential storage/recovery](../tools/scripts/rb-ops/CREDENTIAL_STORAGE.md) and [lifecycle operations](../tools/scripts/rb-ops/LIFECYCLE.md).
 
 - [ ] Credential entry, storage, key handling, backup/recovery and explicit secret export meet RB-006 acceptance criteria with migration/restore fixtures.
 - [ ] Engagement selection, shared migrations, editable records/history and lifecycle behavior meet RB-011 acceptance criteria.
