@@ -1,2 +1,5 @@
 # Maintainer Markdown navigation checks only; not required to use the field guide.
 markdown-it-py==4.2.0
+
+# Optional RB-OPS credential protection tests
+-r tools/scripts/rb-ops/requirements.txt

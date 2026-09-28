@@ -28,12 +28,15 @@ This keeps credentials, findings, and exploit-chain data isolated per engagement
 
 ## Installation
 
-Run from this directory with Python 3 available. Keep the shared module beside the installed commands:
+Run from this directory on Linux with Python 3.11–3.14, using an activated virtual environment. Credential encryption requires the pinned `cryptography` dependency. Keep all shared modules beside the installed commands:
 
 ```bash
+python3 -m pip install -r requirements.txt
 mkdir -p ~/bin
 install -m 644 rb_exports.py ~/bin/rb_exports.py
 install -m 644 rb_finding_model.py ~/bin/rb_finding_model.py
+install -m 644 rb_private.py ~/bin/rb_private.py
+install -m 644 rb_credentials.py ~/bin/rb_credentials.py
 install -m 755 rb-start ~/bin/rb-start
 install -m 755 rb-host ~/bin/rb-host
 install -m 755 rb-web ~/bin/rb-web
@@ -50,7 +53,13 @@ install -m 755 rb-report ~/bin/rb-report
 ### Credentials
 
 ```bash
-rb-creds add svc_sql 'Summer2026!' --host db01 --service mssql --source 'manual review'
+# Inside the engagement tmux session; use a separate key for each engagement.
+install -d -m 700 ~/.config/redbrixen/keys
+export RB_CREDENTIAL_KEY_FILE=~/.config/redbrixen/keys/example-engagement.key
+rb-creds init-key
+# Back up that key separately before storing secrets. Never put it in the repo.
+rb-creds add svc_sql --host db01 --service mssql --source 'manual review'
+# Enter the secret only at the hidden prompt. No positional secret is accepted.
 rb-creds list --show-secrets
 rb-creds validate 1 --host app01 --service winrm --notes 'validated over Evil-WinRM'
 rb-creds export
@@ -92,7 +101,7 @@ The generated report is written by default to:
 
 ## Notes
 
-- Secrets are currently stored in plaintext in SQLite; credential storage protections are tracked separately in RB-006.
+- New credential secrets use authenticated encryption with a separate key. Existing plaintext records require explicit migration; see [credential migration and recovery](CREDENTIAL_STORAGE.md). Notes and other free text are not encrypted.
 - `rb-findings` uses CVSS v3.1 base metrics to calculate a score and severity.
 - `rb-report` generates a client draft with record references; operator prose is available only in explicitly restricted exports.
 
@@ -112,13 +121,13 @@ rb-chain export --restricted
 rb-findings export --restricted
 ```
 
-Default restricted filenames end in `.restricted.md` (for example `engagement_report.restricted.md`) and carry a restricted-data banner. `--output` remains supported; restricted exports require that suffix, while client drafts reject it. Restricted output includes the legacy free text and raw secrets, and the combined report includes scope/engagement notes. Treat embedded links and images as private too; render only in an appropriately controlled environment and distribute the appendix separately under agreed handling.
+Default restricted filenames end in `.restricted.md` (for example `engagement_report.restricted.md`) and carry a restricted-data banner. `--output` remains supported; restricted exports require that suffix, while client drafts reject it. Restricted output includes legacy free text, and the combined report includes scope/engagement notes. Credential secrets are omitted unless `rb-creds export --restricted --include-secrets` or `rb-report --restricted --include-secrets` is used with the matching key. Free-text fields may still contain secrets entered there; this is not a text scrubber. Treat embedded links and images as private too; render only in an appropriately controlled environment and distribute the appendix separately under agreed handling.
 
 All newly written export files use POSIX owner-read/write permissions (0600), including replacements, and are replaced atomically. Symbolic-link output destinations are rejected. Protect the parent directory and backups too; file permissions do not encrypt content. Export failures preserve an existing destination when replacement has not occurred.
 
 ### Upgrade and verification
 
-Reinstall all four scripts **and** `rb_exports.py` and `rb_finding_model.py` together. Existing default output names and database schemas remain unchanged. Earlier exports are not retroactively scrubbed: review or regenerate them before delivery. To recover the former detailed output, use `--restricted`; do not downgrade to restore unsafe defaults. If reverting code is necessary, keep export use suspended until the safe version is restored. Existing add/list/update/validate operations retain their behavior and are local operator views, not client exports.
+Reinstall all four Python scripts and all four shared Python modules together, plus the credential dependency. Existing default output names remain unchanged. RB-006 adds a companion encrypted-secret table and changes secret entry/disclosure; follow [credential migration and recovery](CREDENTIAL_STORAGE.md) before upgrading existing engagements. Earlier exports are not retroactively scrubbed: review or regenerate them before delivery. To recover the former detailed output, use `--restricted`; do not downgrade to restore unsafe defaults. If reverting code is necessary, keep export use suspended until the safe version is restored. Metadata listing and validation remain local operator views. Credential addition now prompts invisibly; `list --show-secrets` requires the external key and migrated records.
 
 Maintainer checks use synthetic SQLite data and mocked engagement resolution (no live client system):
 
