@@ -82,8 +82,10 @@ class ExportTests(unittest.TestCase):
                 self.assertIn('RESTRICTED APPENDIX', text)
                 self.assertIn(self.payload, text)
                 self.assertEqual(stat.S_IMODE(out.stat().st_mode), 0o600)
+        for name in ('rb-creds', 'rb-report'):
+            self.assertNotIn('REGISTERED_SECRET', self.export(name, restricted=True).read_text())
         report = self.export('rb-report', restricted=True).read_text()
-        for marker in ('FILE_PRIVATE', 'SESSION_PRIVATE', 'REGISTERED_SECRET'):
+        for marker in ('FILE_PRIVATE', 'SESSION_PRIVATE'):
             self.assertIn(marker, report)
 
     def test_restricted_cannot_overwrite_default_name(self):
@@ -158,6 +160,8 @@ class ExportTests(unittest.TestCase):
         install.mkdir()
         shutil.copy(TOOLS / 'rb_exports.py', install)
         shutil.copy(TOOLS / 'rb_finding_model.py', install)
+        shutil.copy(TOOLS / 'rb_private.py', install)
+        shutil.copy(TOOLS / 'rb_credentials.py', install)
         for name in self.modules:
             shutil.copy(TOOLS / name, install)
             for script in (install / name, self.root / name):
