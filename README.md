@@ -4,7 +4,7 @@ A manual reference for penetration testers: practical procedures, copyable comma
 
 The tester chooses and performs each task. Every guide must be usable independently of RB binaries, a database, a generated workspace, or an automated lab. Use your own notes, evidence folders, and preferred reporting tools.
 
-## Current status — 2026-09-27
+## Current status — 2026-09-28
 
 The manual reference is under active development. Core corrections and reporting references have merged, but the comprehensive v1 release gates are still open. The completion plan describes the original assessment and future scope; it is not a current completion report.
 
@@ -14,18 +14,18 @@ The manual reference is under active development. Core corrections and reporting
 | Active Directory | Starting map and explicit coverage/deferred-topic labels | Deferred topics and broad AD/Windows lab verification remain incomplete |
 | Scope and reporting | Scope-aware testing/cleanup, standalone client and exam templates, evidence-backed versioned severity guidance | Complete synthetic engagement reports and independent end-to-end review remain release requirements |
 | Recorded command evidence | SSH/SOCKS/ProxyChains loopback TCP and Ligolo 0.9.2 Linux amd64 routed TCP fixtures with positive, negative and cleanup checks | Records cover only their named environments; they do not validate Windows, DNS, UDP, multi-hop pivoting or the rest of the guide |
-| Optional RB-OPS | Default export confidentiality controls and a versioned finding/evidence/remediation model | Credential protection (RB-006) is implemented on this branch pending owner review; shared engagement lifecycle/history (RB-011) remains open; default exports are reviewable drafts, not finished client reports |
+| Optional RB-OPS | Private credential storage/recovery, default export confidentiality and a versioned finding model; RB-011 adds shared selection/migrations, editable findings/chains and private history | RB-011 awaits owner review on this branch; platform/pilot release checks remain open and default exports are reviewable drafts |
 | Maintainer QA | Local validation command and pull-request CI for links, synthetic tool tests, lab-record structure and Python/Bash syntax (RB-012) | Passing checks do not establish procedure correctness or release readiness; see the acceptance gates below |
 
-The merged ticket work includes RB-000–005, RB-007–010 and RB-012–015. RB-006 adds hidden credential entry, protected secret storage, private database permissions, explicit secret disclosure and encrypted backup/recovery; it remains subject to owner review on this branch. Check the [live open tickets](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues?q=is%3Aissue%20is%3Aopen) and [pull requests](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/pulls) for changes after this snapshot. Optional utility tickets do not block use of the manual guide.
+The merged ticket work includes RB-000–010 and RB-012–015. RB-011 is implemented on this branch with explicit engagement selection, transactional schema upgrades, record edits/retests and append-only application history; it remains subject to owner review. Check the [live open tickets](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues?q=is%3Aissue%20is%3Aopen) and [pull requests](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/pulls) for changes after this snapshot. Optional utility tickets do not block use of the manual guide.
 
 See the [verification coverage and release gates](docs/RELEASE_ACCEPTANCE.md) for evidence, unresolved acceptance work and the distinction between guide and utility releases.
 
 ### Latest verification
 
-The [merged RB-012 CI run on 2026-09-27](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/actions/runs/36343236438) passed on Python 3.11 and 3.14. RB-006 adds credential storage and recovery regressions: local validation now passes 42 tests, 270 rendered local Markdown destinations, both saved lab-record structural checks, and parsing of 20 Python and 7 Bash sources. The credential suite includes a real terminal no-echo check and synthetic on-disk migration/recovery. These checks do not rerun the guide labs or establish full release readiness.
+The [merged RB-006 CI run](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/actions/runs/36371948957) passed on Python 3.11 and 3.14. RB-011 local validation passes 52 tests, 281 rendered local Markdown destinations, both saved lab-record structural checks, and parsing of 26 Python and 7 Bash sources. This includes concurrent engagement isolation, migration/history failure rollback and existing credential/export protections. A separate isolated real tmux smoke check passed populated finding/chain edits, history and default reporting. These checks do not rerun the guide labs or establish full release readiness.
 
-Next steps are the remaining manual-guide release evidence listed above, owner review of [RB-006 credential protection](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/7), then implementation of [RB-011 engagement lifecycle support](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/12).
+Next steps are owner review of [RB-011 engagement lifecycle support](https://github.com/DoctorDaddySir/Red-Brixen-Offensive-Security-Field-Guide/issues/12) and the remaining manual-guide and optional-tool release evidence in the acceptance checklist. See the [lifecycle guide](tools/scripts/rb-ops/LIFECYCLE.md) for installation, compatibility and recovery.
 
 ## Start with the task
 

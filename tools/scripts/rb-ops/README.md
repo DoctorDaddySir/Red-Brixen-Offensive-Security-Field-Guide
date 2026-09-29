@@ -16,7 +16,7 @@ RB-OPS is an optional terminal-first engagement workspace toolkit. The field gui
 
 ## Design Rules
 
-- `rb-creds`, `rb-chain`, `rb-findings`, and `rb-report` must be run **inside an active tmux session**.
+- `rb-creds`, `rb-chain`, `rb-findings`, and `rb-report` accept `--engagement NAME` before any subcommand, or use the active tmux session when no selector is supplied. The selected engagement must already exist.
 - The current tmux session name is treated as the engagement name.
 - Each engagement uses its own SQLite database:
 
@@ -28,7 +28,7 @@ This keeps credentials, findings, and exploit-chain data isolated per engagement
 
 ## Installation
 
-Run from this directory on Linux with Python 3.11–3.14, using an activated virtual environment. Credential encryption requires the pinned `cryptography` dependency. Keep all shared modules beside the installed commands:
+Run from this directory on Linux with Python 3.11–3.14, using an activated virtual environment. Credential encryption requires the pinned `cryptography` dependency. Keep all shared modules and the `rb_ops` package beside the installed commands:
 
 ```bash
 python3 -m pip install -r requirements.txt
@@ -37,6 +37,8 @@ install -m 644 rb_exports.py ~/bin/rb_exports.py
 install -m 644 rb_finding_model.py ~/bin/rb_finding_model.py
 install -m 644 rb_private.py ~/bin/rb_private.py
 install -m 644 rb_credentials.py ~/bin/rb_credentials.py
+install -d -m 755 ~/bin/rb_ops
+install -m 644 rb_ops/*.py ~/bin/rb_ops/
 install -m 755 rb-start ~/bin/rb-start
 install -m 755 rb-host ~/bin/rb-host
 install -m 755 rb-web ~/bin/rb-web
@@ -127,7 +129,7 @@ All newly written export files use POSIX owner-read/write permissions (0600), in
 
 ### Upgrade and verification
 
-Reinstall all four Python scripts and all four shared Python modules together, plus the credential dependency. Existing default output names remain unchanged. RB-006 adds a companion encrypted-secret table and changes secret entry/disclosure; follow [credential migration and recovery](CREDENTIAL_STORAGE.md) before upgrading existing engagements. Earlier exports are not retroactively scrubbed: review or regenerate them before delivery. To recover the former detailed output, use `--restricted`; do not downgrade to restore unsafe defaults. If reverting code is necessary, keep export use suspended until the safe version is restored. Metadata listing and validation remain local operator views. Credential addition now prompts invisibly; `list --show-secrets` requires the external key and migrated records.
+Reinstall all four Python scripts, all four shared Python modules and the complete `rb_ops` package together, plus the credential dependency. Existing default output names remain unchanged. RB-006 adds a companion encrypted-secret table and changes secret entry/disclosure; follow [credential migration and recovery](CREDENTIAL_STORAGE.md) before upgrading existing engagements. Earlier exports are not retroactively scrubbed: review or regenerate them before delivery. To recover the former detailed output, use `--restricted`; do not downgrade to restore unsafe defaults. If reverting code is necessary, keep export use suspended until the safe version is restored. Metadata listing and validation remain local operator views. Credential addition now prompts invisibly; `list --show-secrets` requires the external key and migrated records.
 
 Maintainer checks use synthetic SQLite data and mocked engagement resolution (no live client system):
 
@@ -151,7 +153,7 @@ rb-findings details "$FINDING_ID" --file "$DETAIL_FILE"
 rb-findings details "$FINDING_ID"
 ```
 
-Expected: a save confirmation, followed by the stored JSON in the terminal. Treat the display and source file as private; they can contain secrets. The command replaces the **whole detail document**, not individual fields. Preserve the previous copy if you need a history; event history and wider editing remain RB-011. Invalid documents and unknown finding IDs are rejected. Use `rb-findings export --restricted` or `rb-report --restricted` to include the actual detail in a restricted appendix. Default client drafts remain unchanged.
+Expected: a save confirmation, followed by the stored JSON in the terminal. Treat the display and source file as private; they can contain secrets. The command replaces the **whole detail document**, not individual fields. Each changed document now records its previous and new state in private history. Use `rb-findings history ID` to inspect it. A recorded retest cannot be reset to `not_tested`; record a new supported decision instead. See [engagement selection, migrations and lifecycle](LIFECYCLE.md). Invalid documents and unknown finding IDs are rejected. Use `rb-findings export --restricted` or `rb-report --restricted` to include the actual detail in a restricted appendix. Default client drafts remain unchanged.
 
 The top-level `model_version` must be integer `1`; unknown versions, duplicate JSON keys, missing/unknown fields and incorrect types fail validation. Empty draft fields mean “not recorded,” not an inferred success. Review status is `draft` or `reviewed`; reviewed records require a reviewer and a timezone-qualified timestamp.
 
@@ -161,8 +163,24 @@ Retest status is `not_tested`, `resolved`, `partial`, `unresolved`, or `unable_t
 
 ### Migration and recovery
 
-Before upgrading, stop all writers and preserve a protected, consistent backup of the engagement database and any SQLite journal/WAL state using your normal SQLite backup procedure. Keep it under the same restricted handling as credentials. Installing this version does not itself alter a database. Opening `rb-findings` creates the companion `finding_details` table and backfills version-1 empty drafts atomically; repeated initialization preserves existing details. Original `findings` columns, IDs and values are unchanged. Newly saved findings receive an empty draft.
+Before upgrading, stop all writers and preserve a protected, consistent backup of the engagement database and any SQLite journal/WAL state using your normal SQLite backup procedure. Keep it under the same restricted handling as credentials. Installing files does not itself alter a database. RB-011 migrates the selected database transactionally on the first database command (including list/report/backup), adopting existing tables and backfilling version-1 empty finding details; repeated initialization preserves existing details. Original `findings` columns, IDs and values are unchanged. Newly saved findings receive an empty draft.
 
-`rb-report` reads legacy databases without migrating them and displays “Not recorded” for absent details. An unsupported or malformed stored detail document fails restricted rendering instead of silently discarding fields. Default client exports never read these private documents. No destructive schema downgrade is needed: reverting the tool leaves the companion table intact but older restricted exporters cannot show its fields. Retain the database and JSON source copies; restore the full consistent backup only when intentionally rolling back data, since restoration discards later work.
+`rb-report` now uses the same schema migration entry point as the other commands; absent legacy details become empty drafts and render as “Not recorded.” An unsupported or malformed stored detail document fails restricted rendering instead of silently discarding fields. Default client exports never read these private documents. Do not mix older writers with RB-011: they do not record edit history or enforce schema compatibility. Keep the current database and any encrypted backup/key; the [lifecycle recovery procedure](LIFECYCLE.md#upgrade-and-recovery) describes safe rollback into an isolated workspace. Retain the database and JSON source copies; restore the full consistent backup only when intentionally rolling back data, since restoration discards later work.
 
 Verification: synthetic legacy/new SQLite records, repeated/failed backfill, interactive add, JSON save/show, rejected malformed documents and unknown IDs, real-content restricted rendering, and default export isolation are exercised by `tests/test_finding_model.py`. Run `python3 -m unittest discover -s tests` from the repository root. Engagement resolution is mocked; live tmux, production backups and external evidence artifacts are not validated by these tests.
+
+
+## Engagement selection and record lifecycle (RB-011)
+
+The shared `rb_ops` package handles one selected engagement per invocation, private database opening, ordered transactional migrations, record edits and private history. `--engagement NAME` overrides tmux and must precede the subcommand; it never creates a missing engagement.
+
+```bash
+rb-chain --engagement example list
+rb-findings --engagement example update 1 --title 'Reviewed finding title'
+rb-findings --engagement example history 1
+rb-chain --engagement example update 1 --outcome 'Confirmed with a negative control'
+rb-chain --engagement example history 1
+rb-report --engagement example
+```
+
+Follow [the lifecycle guide](LIFECYCLE.md) for retest JSON, migration/recovery, validation evidence and compatibility limits. History is private operator data and is not included in either default or restricted report exports. It begins when this version starts recording edits; it does not reconstruct earlier activity.
